@@ -17,14 +17,18 @@ app.use(bodyParser.json());
 
 // MongoDB connection setup
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch((err) => console.log('MongoDB connection error:', err));
+    .then(() => console.log('✓ MongoDB connected'))
+    .catch((err) => {
+        console.warn('⚠ MongoDB connection failed:', err.message);
+        console.warn('  Your IP may need whitelisting: https://www.mongodb.com/docs/atlas/security-whitelist/');
+        console.warn('  The server will continue running, but database operations will fail');
+    });
 
 // Use product routes
 app.use('/api/products', productRoutes);
 
 // Start the server
-app.listen(5000, () => {
+app.listen(5000,"0.0.0.0", () => {
     console.log('Server is running on port 5000');
 });
     

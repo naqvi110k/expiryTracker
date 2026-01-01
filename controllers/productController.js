@@ -14,7 +14,7 @@ const deleteProduct = async (req, res) => {
 };
 
 const Product = require('../models/productModel');
-const twilioClient = require('../config/twilio');
+const { sendTelegramMessage } = require('../config/twilio');
 
 // Controller function to create a new product
 const createProduct = async (req, res) => {
@@ -57,9 +57,9 @@ const getProducts = async (req, res) => {
     }
 };
 
-// Controller function to send WhatsApp expiry alert
+// Controller function to send Telegram expiry alert
 const sendExpiryAlert = async (req, res) => {
-    const { productId, phoneNumber } = req.body;
+    const { productId } = req.body;
 
     try {
         const product = await Product.findById(productId);
@@ -67,14 +67,15 @@ const sendExpiryAlert = async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        const message = `Reminder: The product ${product.name} (Batch: ${product.batchNumber}) is nearing expiry on ${product.expiryDate}. Please check your stock.`;
+        const message = `🚨 *Expiry Alert*\n\nProduct: ${product.name}\nBatch: ${product.batchNumber}\nExpiry Date: ${product.expiryDate}\nQuantity: ${product.quantity}\n\n⚠️ Please check your stock immediately!`;
 
-        // Send the WhatsApp message
-        twilioClient.sendExpiryAlert(phoneNumber, message);
+        // Send the Telegram message
+        await sendTelegramMessage(message);
 
-        res.status(200).json({ message: 'Expiry alert sent' });
+        res.status(200).json({ message: 'Expiry alert sent to Telegram' });
     } catch (err) {
-        res.status(500).json({ error: 'Error sending alert' });
+        console.error('Error sending expiry alert:', err);
+        res.status(500).json({ error: 'Error sending alert: ' + err.message });
     }
 };
 
