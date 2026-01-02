@@ -1,8 +1,7 @@
 const axios = require("axios");
 const dotenv = require("dotenv");
-
-// Ensure environment variables are loaded
 dotenv.config();
+const twilio = require('twilio');
 
 const sendTelegramMessage = async (message) => {
   // Validate credentials before sending
@@ -34,4 +33,27 @@ const sendTelegramMessage = async (message) => {
 };
 
 
-module.exports = { sendTelegramMessage };
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
+async function sendWhatsApp(message) {
+  try {
+    const response = await client.messages.create({
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`, 
+      to: `whatsapp:${process.env.SHOPKEEPER_WHATSAPP_TO}`,                           // whatsapp:+92333xxxxxx
+      body: message
+    });
+
+    console.log("✅ WhatsApp sent:", response.sid);
+    return response;
+  } catch (error) {
+    console.error("❌ WhatsApp error:", error.message);
+    throw error; // optional: lets caller know it failed
+  }
+}
+
+
+
+module.exports = { sendTelegramMessage, sendWhatsApp };
