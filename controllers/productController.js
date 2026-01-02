@@ -67,19 +67,117 @@ const sendExpiryAlert = async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        const message = `🚨 *Expiry Alert*\n\nProduct: ${product.name}\nBatch: ${product.batchNumber}\nExpiry Date: ${product.expiryDate}\nQuantity: ${product.quantity}\n\n⚠️ Please check your stock immediately!`;
+        const today = new Date();
+        const expiryDate = new Date(product.expiryDate);
+        
+        // Reset time to midnight for accurate date comparison
+        today.setHours(0, 0, 0, 0);
+        expiryDate.setHours(0, 0, 0, 0);
 
-        // Send the Telegram message
-        // await sendTelegramMessage(message);
+        // Calculate difference in milliseconds
+        const timeDiff = expiryDate - today;
+        const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+        let statusMessage = '';
+        let alertIcon = '';
+
+        if (daysDiff < 0) {
+            // Product is expired
+            const daysExpired = Math.abs(daysDiff);
+            alertIcon = '❌';
+            statusMessage = `*EXPIRED* - ${daysExpired} day${daysExpired !== 1 ? 's' : ''} ago`;
+        } else if (daysDiff === 0) {
+            // Expires today
+            alertIcon = '🚨';
+            statusMessage = '*EXPIRES TODAY*';
+        } else if (daysDiff <= 30) {
+            // Expires within a month
+            alertIcon = '⚠️';
+            statusMessage = `*Expires in ${daysDiff} day${daysDiff !== 1 ? 's' : ''}*`;
+        } else if (daysDiff < 365) {
+            // Less than a year - calculate ACCURATE months and days
+            alertIcon = '⚠️';
+            
+            // Calculate accurate months and days
+            const start = new Date(today);
+            const end = new Date(expiryDate);
+            
+            let months = 0;
+            let remainingDays = 0;
+            
+            // Method 1: Accurate calculation
+            let tempDate = new Date(start);
+            
+            // Add months until we exceed the expiry date
+            while (true) {
+                tempDate.setMonth(tempDate.getMonth() + 1);
+                if (tempDate <= end) {
+                    months++;
+                } else {
+                    tempDate.setMonth(tempDate.getMonth() - 1);
+                    break;
+                }
+            }
+            
+            // Calculate remaining days
+            const remainingTime = end - tempDate;
+            remainingDays = Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
+            
+            // Handle edge case where remainingDays might be negative
+            if (remainingDays < 0) {
+                remainingDays = 0;
+            }
+            
+            if (months > 0 && remainingDays > 0) {
+                statusMessage = `*Expires in ${months} month${months !== 1 ? 's' : ''} and ${remainingDays} day${remainingDays !== 1 ? 's' : ''}*`;
+            } else if (months > 0) {
+                statusMessage = `*Expires in ${months} month${months !== 1 ? 's' : ''}*`;
+            } else {
+                statusMessage = `*Expires in ${remainingDays} day${remainingDays !== 1 ? 's' : ''}*`;
+            }
+        } else {
+            // 365 days or more - show in years
+            const yearsLeft = Math.floor(daysDiff / 365);
+            const remainingDays = daysDiff % 365;
+            const remainingMonths = Math.floor(remainingDays / 30);
+            const finalDays = remainingDays % 30;
+            alertIcon = 'ℹ️';
+            
+            if (remainingMonths > 0 && finalDays > 0) {
+                statusMessage = `Expires in ${yearsLeft} year${yearsLeft !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''} and ${finalDays} day${finalDays !== 1 ? 's' : ''}`;
+            } else if (remainingMonths > 0) {
+                statusMessage = `Expires in ${yearsLeft} year${yearsLeft !== 1 ? 's' : ''} and ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
+            } else if (finalDays > 0) {
+                statusMessage = `Expires in ${yearsLeft} year${yearsLeft !== 1 ? 's' : ''} and ${finalDays} day${finalDays !== 1 ? 's' : ''}`;
+            } else {
+                statusMessage = `Expires in ${yearsLeft} year${yearsLeft !== 1 ? 's' : ''}`;
+            }
+        }
+
+        const message = `${alertIcon} *Expiry Alert*
+
+Product: ${product.name}
+Batch: ${product.batchNumber}
+Expiry Date: ${new Date(product.expiryDate).toLocaleDateString()}
+Quantity: ${product.quantity}
+
+Status: ${statusMessage}
+
+⚠️ Please check your stock immediately!`;
+
+        // Send the WhatsApp message
         await sendWhatsApp(message);
 
-        res.status(200).json({ message: 'Expiry alert sent to WhatsApp' });
+        res.status(200).json({ 
+            message: 'Expiry alert sent to WhatsApp',
+            status: statusMessage,
+            daysRemaining: daysDiff
+        });
     } catch (err) {
         console.error('Error sending expiry alert:', err);
         res.status(500).json({ error: 'Error sending alert: ' + err.message });
     }
 };
-
 module.exports = {
     createProduct,
     getProducts,
