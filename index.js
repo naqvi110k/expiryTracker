@@ -5,12 +5,15 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const productRoutes = require('./routes/productRoutes');
+const cors = require('cors');
 
 // Load environment variables
 dotenv.config();
 
 // Initialize express app
 const app = express();
+
+app.use(cors());
 
 // Middleware to parse JSON
 app.use(bodyParser.json());

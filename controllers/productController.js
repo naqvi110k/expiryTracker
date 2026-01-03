@@ -178,6 +178,7 @@ Status: ${statusMessage}
         res.status(500).json({ error: 'Error sending alert: ' + err.message });
     }
 };
+
 module.exports = {
     createProduct,
     getProducts,

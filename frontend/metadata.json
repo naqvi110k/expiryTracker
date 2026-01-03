@@ -1,0 +1,8 @@
+
+{
+  "name": "ScanLogix Pro",
+  "description": "An AI-powered product information extractor that captures product names, batch numbers, expiry dates, and quantities from photos using Gemini vision technology.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
