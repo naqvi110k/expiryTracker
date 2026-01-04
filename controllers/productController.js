@@ -18,7 +18,7 @@ const { sendTelegramMessage , sendWhatsApp} = require('../config/twilio');
 
 // Controller function to create a new product
 const createProduct = async (req, res) => {
-    const { name, batchNumber, expiryDate, quantity } = req.body;
+    const { name, batchNumber, expiryDate, quantity, category, description } = req.body;
     console.log('Request body:', req.body);
 
     // Basic validation
@@ -37,7 +37,9 @@ const createProduct = async (req, res) => {
             name,
             batchNumber,
             expiryDate,
-            quantity
+            quantity,
+            category: category || 'Uncategorized',
+            description: description || ''
         });
         const savedProduct = await newProduct.save();
         res.status(201).json(savedProduct);
@@ -157,6 +159,8 @@ const sendExpiryAlert = async (req, res) => {
         const message = `${alertIcon} *Expiry Alert*
 
 Product: ${product.name}
+Category: ${product.category}
+Description: ${product.description || 'N/A'}
 Batch: ${product.batchNumber}
 Expiry Date: ${new Date(product.expiryDate).toLocaleDateString()}
 Quantity: ${product.quantity}
@@ -179,10 +183,39 @@ Status: ${statusMessage}
     }
 };
 
+// Controller function to update a product by ID
+const updateProduct = async (req, res) => {
+    const { id } = req.params;
+    const { name, batchNumber, expiryDate, quantity, category, description } = req.body;
+
+    // Basic validation
+    if (!name || !batchNumber || !expiryDate || quantity === undefined) {
+        return res.status(400).json({ error: 'All fields are required: name, batchNumber, expiryDate, quantity' });
+    }
+
+    try {
+        const updated = await Product.findByIdAndUpdate(
+            id,
+            { name, batchNumber, expiryDate, quantity, category: category || 'Uncategorized', description: description || '' },
+            { new: true, runValidators: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        res.status(200).json(updated);
+    } catch (err) {
+        console.error('Error updating product:', err);
+        res.status(400).json({ error: err.message || 'Error updating product' });
+    }
+};
+
 module.exports = {
     createProduct,
     getProducts,
     sendExpiryAlert,
-    deleteProduct
+    deleteProduct,
+    updateProduct
 };
     

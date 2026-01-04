@@ -14,6 +14,8 @@ const ResultCard = ({ details, onReset }) => {
     batchNumber: details.batchNumber || '',
     expiryDate: details.expiryDate || '',
     quantity: extractNumber(details.quantity) || '',
+    category: details.category || '',
+    description: details.description || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
@@ -23,6 +25,8 @@ const ResultCard = ({ details, onReset }) => {
     { label: 'Batch Number', name: 'batchNumber', icon: '🔢', type: 'text' },
     { label: 'Expiry Date', name: 'expiryDate', icon: '📅', type: 'date' },
     { label: 'Quantity/Size', name: 'quantity', icon: '⚖️', type: 'number' },
+    { label: 'Category', name: 'category', icon: '🏷️', type: 'text' },
+    { label: 'Description', name: 'description', icon: '📝', type: 'text' },
   ];
 
   const handleInputChange = (name, value) => {

@@ -48,12 +48,16 @@ export const extractProductDetails = async (base64Image) => {
             type: Type.STRING,
             description: "The weight, volume, or count (e.g., 500g, 10 pieces).",
           },
-          additionalNotes: {
+          category: {
             type: Type.STRING,
-            description: "Any other relevant identifying information.",
+            description: "The category of the product (e.g., Food, Medicine, Cosmetics, Electronics).",
+          },
+          description: {
+            type: Type.STRING,
+            description: "A brief description of the product or its ingredients/usage.",
           },
         },
-        required: ["productName", "batchNumber", "expiryDate", "quantity"],
+        required: ["productName", "batchNumber", "expiryDate", "quantity", "category"],
       },
     },
   });
