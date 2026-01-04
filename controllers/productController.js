@@ -18,7 +18,7 @@ const { sendTelegramMessage , sendWhatsApp} = require('../config/twilio');
 
 // Controller function to create a new product
 const createProduct = async (req, res) => {
-    const { name, batchNumber, expiryDate, quantity, category, description } = req.body;
+    const { name, batchNumber, expiryDate, quantity, unit, category, description, image } = req.body;
     console.log('Request body:', req.body);
 
     // Basic validation
@@ -38,8 +38,10 @@ const createProduct = async (req, res) => {
             batchNumber,
             expiryDate,
             quantity,
+            unit: unit || 'units',
             category: category || 'Uncategorized',
-            description: description || ''
+            description: description || '',
+            image: image || null
         });
         const savedProduct = await newProduct.save();
         res.status(201).json(savedProduct);
@@ -186,7 +188,7 @@ Status: ${statusMessage}
 // Controller function to update a product by ID
 const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { name, batchNumber, expiryDate, quantity, category, description } = req.body;
+    const { name, batchNumber, expiryDate, quantity, unit, category, description, image } = req.body;
 
     // Basic validation
     if (!name || !batchNumber || !expiryDate || quantity === undefined) {
@@ -194,9 +196,24 @@ const updateProduct = async (req, res) => {
     }
 
     try {
+        const updateData = {
+            name,
+            batchNumber,
+            expiryDate,
+            quantity,
+            unit: unit || 'units',
+            category: category || 'Uncategorized',
+            description: description || ''
+        };
+        
+        // Only update image if provided
+        if (image) {
+            updateData.image = image;
+        }
+
         const updated = await Product.findByIdAndUpdate(
             id,
-            { name, batchNumber, expiryDate, quantity, category: category || 'Uncategorized', description: description || '' },
+            updateData,
             { new: true, runValidators: true }
         );
 

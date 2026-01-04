@@ -1,158 +1,334 @@
-
-import React, { useState, useRef } from 'react';
-import Header from './components/Header.jsx';
-import ResultCard from './components/ResultCard.jsx';
-import { extractProductDetails } from './services/geminiService.js';
+import React, { useEffect, useState, useMemo } from 'react';
+import { getProducts, updateProduct, deleteProduct, createProduct } from './services/productService';
+import ProductCard from './components/ProductCard';
+import ProductDetails from './components/ProductDetails';
+import ProductForm from './components/ProductForm';
+import Sheet from './components/ui/Sheet';
+import Dialog from './components/ui/Dialog';
+import Button from './components/ui/Button';
+import { Search, Plus, Boxes, RefreshCw } from 'lucide-react';
 
 const App = () => {
-  const [image, setImage] = useState(null);
-  const [extraction, setExtraction] = useState({
-    isLoading: false,
-    error: null,
-    data: null,
-  });
-  const fileInputRef = useRef(null);
+  // State
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Selection & Modal States
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  
+  // Toast State
+  const [toast, setToast] = useState(null);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        setImage(base64String);
-        processImage(base64String);
-      };
-      reader.readAsDataURL(file);
+  // Initial Data Fetch
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Toast Auto-dismiss
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [toast]);
 
-  const processImage = async (base64) => {
-    setExtraction({ isLoading: true, error: null, data: null });
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const data = await extractProductDetails(base64);
-      setExtraction({ isLoading: false, error: null, data });
-     console.log(extraction.data);
-     
-    } catch (err) {
-      setExtraction({
-        isLoading: false,
-        error: err instanceof Error ? err.message : "An unexpected error occurred.",
-        data: null,
-      });
+      const data = await getProducts();
+      // Normalize data to use 'id' field instead of '_id' from MongoDB
+      const normalizedData = data.map(product => ({
+        ...product,
+        id: product._id || product.id
+      }));
+      setProducts(normalizedData);
+    } catch (error) {
+      showToast('error', 'Failed to fetch products');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const reset = () => {
-    setImage(null);
-    setExtraction({ isLoading: false, error: null, data: null });
-    if (fileInputRef.current) fileInputRef.current.value = '';
+  const showToast = (type, message) => {
+    setToast({ id: Date.now().toString(), type, message });
+  };
+
+  // Filter Logic
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.batchNumber.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [products, searchQuery]);
+
+  // Handlers
+  const handleProductClick = (product) => {
+    setSelectedProduct(product);
+  };
+
+  const handleEditClick = (product) => {
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (product) => {
+    setIsDeleteModalOpen(true);
+  };
+  
+  const handleAddClick = () => {
+    setIsAddModalOpen(true);
+  };
+
+  const handleCreateProduct = async (data) => {
+    setActionLoading(true);
+    try {
+      const newProduct = await createProduct(data);
+      // Normalize response
+      const normalizedProduct = {
+        ...newProduct,
+        id: newProduct._id || newProduct.id
+      };
+      setProducts(prev => [normalizedProduct, ...prev]);
+      setIsAddModalOpen(false);
+      showToast('success', 'Product created successfully');
+    } catch (error) {
+      showToast('error', 'Failed to create product');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateProduct = async (data) => {
+    if (!selectedProduct) return;
+    
+    setActionLoading(true);
+    try {
+      const updated = await updateProduct(selectedProduct.id, data);
+      // Normalize response
+      const normalizedProduct = {
+        ...updated,
+        id: updated._id || updated.id
+      };
+      
+      // Update local state
+      setProducts(prev => prev.map(p => p.id === normalizedProduct.id ? normalizedProduct : p));
+      setSelectedProduct(normalizedProduct);
+      setIsEditModalOpen(false);
+      showToast('success', 'Product updated successfully');
+    } catch (error) {
+      showToast('error', 'Failed to update product');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedProduct) return;
+
+    setActionLoading(true);
+    try {
+      await deleteProduct(selectedProduct.id);
+      
+      // Update local state
+      setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
+      setSelectedProduct(null); // Close sheet
+      setIsDeleteModalOpen(false); // Close dialog
+      showToast('success', 'Product deleted successfully');
+    } catch (error) {
+      showToast('error', 'Failed to delete product');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Header />
-
-      <main className="flex-grow max-w-4xl mx-auto w-full px-4 py-8">
-        <div className="max-w-2xl mx-auto space-y-8">
-
-          <section className="text-center space-y-2">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Extract Product Data
-            </h2>
-            <p className="text-gray-500 text-lg">
-              Upload or snap a photo of product packaging to identify details instantly.
-            </p>
-          </section>
-
-          {!image ? (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="cursor-pointer group relative block w-full border-2 border-gray-300 border-dashed rounded-3xl p-12 text-center hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 bg-white transition-all shadow-sm hover:shadow-md"
-            >
-              <div className="flex flex-col items-center">
-                <div className="p-4 bg-indigo-50 rounded-full group-hover:bg-indigo-100 transition-colors">
-                  <svg className="mx-auto h-12 w-12 text-indigo-600" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <span className="mt-4 block text-lg font-bold text-gray-900">Click to Upload or Take Photo</span>
-                <span className="mt-1 block text-sm text-gray-500">Supports JPG, PNG (Max 10MB)</span>
-              </div>
-              <input
-                type="file"
-                className="hidden"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={handleFileChange}
-                capture="environment"
-              />
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+      
+      {/* Navbar */}
+      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2 min-w-0">
+            <div className="bg-gradient-to-tr from-blue-600 to-cyan-400 p-2 rounded-lg text-white flex-shrink-0">
+              <Boxes size={24} />
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="relative group">
-                <img
-                  src={image}
-                  alt="Product preview"
-                  className="w-full h-auto max-h-96 object-contain rounded-3xl shadow-lg bg-black"
-                />
-                {!extraction.isLoading && (
-                  <button
-                    onClick={reset}
-                    className="absolute top-4 right-4 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 transition-colors"
-                    title="Remove image"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              {extraction.isLoading && (
-                <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-lg text-center space-y-4 animate-pulse">
-                  <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900">Analyzing Product...</h3>
-                  <p className="text-gray-500">Our AI is reading text, dates, and codes from your photo.</p>
-                </div>
-              )}
-
-              {extraction.error && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center space-y-4">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                    <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-red-800">Extraction Failed</h3>
-                    <p className="text-red-700 mt-1">{extraction.error}</p>
-                  </div>
-                  <button
-                    onClick={reset}
-                    className="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-xl text-white bg-red-600 hover:bg-red-700 transition-colors"
-                  >
-                    Try Again
-                  </button>
-                </div>
-              )}
-
-              {extraction.data && (
-                <ResultCard details={extraction.data} onReset={reset} />
-              )}
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 whitespace-nowrap">
+                Inventa
+              </h1>
+              <p className="text-xs text-slate-500 font-medium whitespace-nowrap">Product Dashboard</p>
             </div>
-          )}
+          </div>
+          
+          <div className="flex items-center space-x-3 flex-shrink-0 ml-4">
+             <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200 flex items-center whitespace-nowrap">
+                <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider mr-2">Total Items</span>
+                <span className="text-lg font-bold text-blue-900">{products.length}</span>
+             </div>
+          </div>
         </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+          <div className="relative flex-1 group">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search products, batches, categories..."
+              className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 sm:text-sm shadow-sm transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex gap-3 flex-shrink-0">
+             <Button variant="outline" onClick={fetchData} title="Refresh Data" size="md">
+                <RefreshCw size={18} className={`${loading ? 'animate-spin' : ''}`} />
+             </Button>
+             <Button size="md" onClick={handleAddClick} className="whitespace-nowrap">
+               <Plus size={18} className="mr-2" /> Add Product
+             </Button>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin"></div>
+            </div>
+            <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading inventory...</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && filteredProducts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed">
+            <div className="bg-slate-50 p-4 rounded-full mb-4">
+               <Search className="h-8 w-8 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-medium text-slate-900">No products found</h3>
+            <p className="text-slate-500 mt-1 max-w-sm text-center">
+              We couldn't find any products matching your search criteria. Try adjusting your filters.
+            </p>
+            <Button variant="outline" className="mt-6" onClick={() => setSearchQuery('')}>
+              Clear Search
+            </Button>
+          </div>
+        )}
+
+        {/* Grid */}
+        {!loading && filteredProducts.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map(product => (
+              <ProductCard 
+                key={product.id} 
+                product={product} 
+                onClick={handleProductClick} 
+              />
+            ))}
+          </div>
+        )}
       </main>
 
-      <footer className="bg-white border-t border-gray-200 py-6">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-gray-400 text-sm">
-            &copy; {new Date().getFullYear()} ScanLogix Pro. Powered by Gemini Vision.
-          </p>
+      {/* Detail Slide-over */}
+      <Sheet 
+        isOpen={!!selectedProduct} 
+        onClose={() => setSelectedProduct(null)}
+        title="Product Details"
+      >
+        {selectedProduct && (
+          <ProductDetails 
+            product={selectedProduct} 
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
+            onAlertSent={showToast}
+          />
+        )}
+      </Sheet>
+
+      {/* Edit Dialog */}
+      <Dialog 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Product"
+        description="Make changes to the product inventory details below."
+      >
+        {selectedProduct && (
+          <ProductForm 
+            initialData={selectedProduct} 
+            onSave={handleUpdateProduct}
+            onCancel={() => setIsEditModalOpen(false)}
+            isLoading={actionLoading}
+          />
+        )}
+      </Dialog>
+      
+      {/* Add Dialog */}
+      <Dialog 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add New Product"
+        description="Enter the details for the new product to add to inventory."
+      >
+        <ProductForm 
+          onSave={handleCreateProduct}
+          onCancel={() => setIsAddModalOpen(false)}
+          isLoading={actionLoading}
+        />
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        isOpen={isDeleteModalOpen} 
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Delete Product"
+        description="Are you sure you want to delete this product? This action cannot be undone."
+      >
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            variant="danger" 
+            onClick={handleConfirmDelete} 
+            isLoading={actionLoading}
+          >
+            Delete Product
+          </Button>
         </div>
-      </footer>
+      </Dialog>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+          <div className={`flex items-center px-4 py-3 rounded-lg shadow-lg border ${
+            toast.type === 'success' ? 'bg-white border-emerald-200 text-emerald-800' :
+            toast.type === 'error' ? 'bg-white border-red-200 text-red-800' :
+            'bg-white border-blue-200 text-blue-800'
+          }`}>
+             <div className={`mr-3 rounded-full p-1 ${
+                toast.type === 'success' ? 'bg-emerald-100' :
+                toast.type === 'error' ? 'bg-red-100' : 'bg-blue-100'
+             }`}>
+                {toast.type === 'success' ? <div className="h-2 w-2 rounded-full bg-emerald-500" /> :
+                 toast.type === 'error' ? <div className="h-2 w-2 rounded-full bg-red-500" /> :
+                 <div className="h-2 w-2 rounded-full bg-blue-500" />}
+             </div>
+             <p className="text-sm font-medium">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

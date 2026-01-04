@@ -1,8 +1,5 @@
-
 {
-  "name": "ScanLogix Pro",
-  "description": "An AI-powered product information extractor that captures product names, batch numbers, expiry dates, and quantities from photos using Gemini vision technology.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "name": "Inventa - Product Dashboard",
+  "description": "A modern, responsive product inventory management dashboard featuring teal/cyan aesthetics, expiry tracking, and comprehensive CRUD operations.",
+  "requestFramePermissions": []
 }

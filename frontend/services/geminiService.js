@@ -3,15 +3,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 export const extractProductDetails = async (base64Image) => {
   const apiKey = import.meta.env.VITE_API_KEY || '';
-  console.log(import.meta.env.VITE_API_KEY);
-
   if (!apiKey) {
     throw new Error('Missing VITE_API_KEY environment variable. Add it to a .env file or your environment.');
   }
   const ai = new GoogleGenAI({ apiKey });
   
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-2.5-flash-lite',
     contents: [
       {
         parts: [

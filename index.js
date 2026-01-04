@@ -15,8 +15,9 @@ const app = express();
 
 app.use(cors());
 
-// Middleware to parse JSON
-app.use(bodyParser.json());
+// Middleware to parse JSON with increased limit for image uploads
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // MongoDB connection setup
 mongoose.connect(process.env.MONGO_URI)
