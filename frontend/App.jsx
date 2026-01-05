@@ -7,9 +7,10 @@ import Sheet from './components/ui/Sheet';
 import Dialog from './components/ui/Dialog';
 import Button from './components/ui/Button';
 import Input from './components/ui/Input';
-import { Search, Plus, Boxes, RefreshCw, LogOut, User as UserIcon } from 'lucide-react';
+import { Search, Plus, Boxes, RefreshCw, LogOut, User as UserIcon, Sun, Moon } from 'lucide-react';
 import Login from './components/Login';
 import Register from './components/Register';
+import Profile from './components/Profile';
 import { getCurrentUser, logout as logoutUser } from './services/authService';
 import { getProfile, updateProfile, deleteAccount } from './services/userService';
 
@@ -34,11 +35,37 @@ const App = () => {
   const [toast, setToast] = useState(null);
 
   // Profile state
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [profile, setProfile] = useState({ username: '', email: '', phoneNumber: '' });
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileError, setProfileError] = useState('');
+  const [showProfile, setShowProfile] = useState(false);
+
+  // Theme state
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Toggle theme
+  const toggleTheme = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    document.documentElement.classList.toggle('dark', newMode);
+    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+  };
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  // Get user initials for circular avatar
+  const getUserInitials = (username) => {
+    if (!username) return '';
+    const names = username.split(' ');
+    if (names.length > 1) {
+      return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+    }
+    return username.substring(0, 2).toUpperCase();
+  };
 
   // Initialize auth + data
   useEffect(() => {
@@ -91,75 +118,20 @@ const App = () => {
     setProducts([]);
   };
 
-  const openProfile = async () => {
-    setIsProfileOpen(true);
-    setProfileError('');
-    setProfileLoading(true);
-    try {
-      const data = await getProfile();
-      setProfile({
-        username: data.username || '',
-        email: data.email || '',
-        phoneNumber: data.phoneNumber || '',
-      });
-    } catch (err) {
-      setProfileError(
-        err?.response?.data?.error || 'Failed to load profile. Please try again.'
-      );
-    } finally {
-      setProfileLoading(false);
-    }
+  const openProfile = () => {
+    setShowProfile(true);
   };
 
-  const handleProfileChange = (e) => {
-    const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value }));
+  const closeProfile = () => {
+    setShowProfile(false);
   };
 
-  const handleProfileSave = async (e) => {
-    e.preventDefault();
-    setProfileError('');
-
-    if (!profile.phoneNumber.startsWith('+')) {
-      setProfileError('Phone number must start with + and country code');
-      return;
-    }
-
-    setProfileSaving(true);
-    try {
-      const updated = await updateProfile(profile);
-      setAuthUser((prev) => ({
-        ...(prev || {}),
-        username: updated.username,
-        phoneNumber: updated.phoneNumber,
-      }));
-      showToast('success', 'Profile updated successfully');
-      setIsProfileOpen(false);
-    } catch (err) {
-      setProfileError(
-        err?.response?.data?.error || 'Failed to update profile. Please try again.'
-      );
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    const confirm = window.confirm(
-      'Are you sure you want to delete your account and all products? This cannot be undone.'
-    );
-    if (!confirm) return;
-
-    try {
-      await deleteAccount();
-      showToast('success', 'Account deleted');
-      handleLogout();
-    } catch (err) {
-      showToast(
-        'error',
-        err?.response?.data?.error || 'Failed to delete account. Please try again.'
-      );
-    }
+  const handleProfileUpdate = (updatedUser) => {
+    setAuthUser((prev) => ({
+      ...(prev || {}),
+      username: updatedUser.username,
+      phoneNumber: updatedUser.phoneNumber,
+    }));
   };
 
   // Filter Logic
@@ -262,53 +234,61 @@ const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className={`min-h-screen ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'}`}>
       {/* Navbar */}
-      <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2 min-w-0">
-            <div className="bg-gradient-to-tr from-blue-600 to-cyan-400 p-2 rounded-lg text-white flex-shrink-0">
-              <Boxes size={24} />
+      <header className={`sticky top-0 z-30 backdrop-blur-lg border-b shadow-lg ${darkMode ? 'bg-slate-800/80 border-slate-700/50' : 'bg-white/80 border-slate-200/50'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="bg-gradient-to-tr from-blue-600 to-cyan-500 p-3 rounded-xl text-white flex-shrink-0 shadow-lg">
+              <Boxes size={28} />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 whitespace-nowrap">
+              <h1 className={`text-xl font-bold bg-clip-text text-transparent whitespace-nowrap ${darkMode ? 'bg-gradient-to-r from-cyan-400 to-blue-400' : 'bg-gradient-to-r from-slate-900 to-slate-600'}`}>
                 Inventa
               </h1>
-              <p className="text-xs text-slate-500 font-medium whitespace-nowrap">
-                Product Dashboard
+              <p className={`text-sm font-medium whitespace-nowrap ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Smart Inventory Management
               </p>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-3 flex-shrink-0 ml-4">
+
+          <div className="flex items-center space-x-4 flex-shrink-0 ml-4">
+            {/* Theme Toggle Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className={`transition-colors ${darkMode ? 'text-yellow-400 hover:bg-slate-700 border-slate-600 hover:border-slate-500' : 'text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-slate-300'}`}
+              onClick={toggleTheme}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              <span className="hidden sm:inline ml-2">{darkMode ? 'Light' : 'Dark'}</span>
+            </Button>
+
+            {/* User Profile Section */}
             <button
               type="button"
               onClick={openProfile}
-              className="hidden sm:flex flex-col items-end mr-2 text-right"
+              className={`hidden sm:flex items-center space-x-3 mr-4 rounded-xl px-4 py-2.5 transition-all duration-200 border ${darkMode ? 'hover:bg-slate-700 border-transparent hover:border-slate-600' : 'hover:bg-slate-50 border-transparent hover:border-slate-200'}`}
             >
-              <span className="text-xs text-slate-500">Logged in as</span>
-              <span className="text-sm font-semibold text-slate-800 flex items-center gap-1">
-                <UserIcon size={14} className="text-slate-500" />
-                {authUser?.username}
-              </span>
+              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-2 rounded-full text-white">
+                <span className="text-sm font-bold">{getUserInitials(authUser?.username)}</span>
+              </div>
+              <div className="text-left">
+                <p className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Hello,</p>
+                <p className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{authUser?.username}</p>
+              </div>
             </button>
-            <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200 flex items-center whitespace-nowrap">
-              <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider mr-2">
-                Total Items
-              </span>
-              <span className="text-lg font-bold text-blue-900">
-                {products.length}
-              </span>
-            </div>
+
             <Button
-              variant="ghost"
-              size="md"
-              className="ml-2 text-slate-600"
+              variant="outline"
+              size="sm"
+              className={`ml-4 transition-colors ${darkMode ? 'text-yellow-400 hover:bg-slate-700 border-slate-600 hover:border-slate-500' : 'text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-slate-300'}`}
               onClick={handleLogout}
-              title="Logout"
+              title="Sign out"
             >
-              <LogOut size={18} className="mr-1" />
-              <span className="hidden sm:inline">Logout</span>
+              <LogOut size={18} className="mr-2" />
+              <span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>
         </div>
@@ -316,88 +296,182 @@ const App = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
-          <div className="relative flex-1 group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+        {/* Dashboard Header */}
+        <div className="mb-8">
+          <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Dashboard Overview</h2>
+          <p className={darkMode ? 'text-slate-400' : 'text-slate-600'}>Manage your inventory and track product expiry dates</p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 rounded-xl text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Total Products</p>
+                <p className="text-3xl font-bold mt-1">{products.length}</p>
+              </div>
+              <div className="bg-white/20 p-3 rounded-lg">
+                <Boxes size={24} />
+              </div>
             </div>
-            <input
-              type="text"
-              placeholder="Search products, batches, categories..."
-              className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 sm:text-sm shadow-sm transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
           </div>
-          
-          <div className="flex gap-3 flex-shrink-0">
-            <Button
-              variant="outline"
-              onClick={fetchData}
-              title="Refresh Data"
-              size="md"
-            >
-              <RefreshCw
-                size={18}
-                className={`${loading ? 'animate-spin' : ''}`}
+
+          <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6 rounded-xl text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-emerald-100 text-sm font-medium">Active Items</p>
+                <p className="text-3xl font-bold mt-1">
+                  {products.filter(p => new Date(p.expiryDate) > new Date()).length}
+                </p>
+              </div>
+              <div className="bg-white/20 p-3 rounded-lg">
+                <Plus size={24} />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-xl text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">Expiring Soon</p>
+                <p className="text-3xl font-bold mt-1">
+                  {products.filter(p => {
+                    const expiry = new Date(p.expiryDate);
+                    const now = new Date();
+                    const diffDays = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+                    return diffDays >= 0 && diffDays <= 7;
+                  }).length}
+                </p>
+              </div>
+              <div className="bg-white/20 p-3 rounded-lg">
+                <RefreshCw size={24} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1 group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search products by name, batch, or category..."
+                className="block w-full pl-12 pr-4 py-3 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm shadow-sm transition-all"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-            </Button>
-            <Button
-              size="md"
-              onClick={handleAddClick}
-              className="whitespace-nowrap"
-            >
-              <Plus size={18} className="mr-2" /> Add Product
-            </Button>
+            </div>
+
+            <div className="flex gap-3 flex-shrink-0">
+              <Button
+                variant="outline"
+                onClick={fetchData}
+                title="Refresh Data"
+                size="md"
+                className="hover:bg-slate-50"
+              >
+                <RefreshCw
+                  size={18}
+                  className={`mr-2 ${loading ? 'animate-spin' : ''}`}
+                />
+                Refresh
+              </Button>
+              <Button
+                size="md"
+                onClick={handleAddClick}
+                className="whitespace-nowrap shadow-sm"
+              >
+                <Plus size={18} className="mr-2" />
+                Add Product
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin"></div>
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12">
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-blue-100 border-t-transparent animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+              </div>
+              <h3 className={`text-lg font-semibold mt-6 mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Loading Your Inventory</h3>
+              <p className={`text-center animate-pulse ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                Fetching your products and expiry information...
+              </p>
             </div>
-            <p className="mt-4 text-slate-500 font-medium animate-pulse">
-              Loading inventory...
-            </p>
           </div>
         )}
 
         {/* Empty State */}
         {!loading && filteredProducts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed">
-            <div className="bg-slate-50 p-4 rounded-full mb-4">
-              <Search className="h-8 w-8 text-slate-400" />
+          <div className={`rounded-xl shadow-sm border p-12 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className={`p-6 rounded-full mb-6 ${darkMode ? 'bg-gradient-to-br from-slate-700 to-slate-600' : 'bg-gradient-to-br from-slate-100 to-slate-200'}`}>
+                <Search className={`h-12 w-12 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+              </div>
+              <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                {searchQuery ? 'No products found' : 'No products yet'}
+              </h3>
+              <p className={darkMode ? 'text-slate-400 mb-8 max-w-md' : 'text-slate-600 mb-8 max-w-md'}>
+                {searchQuery
+                  ? 'We couldn\'t find any products matching your search criteria. Try adjusting your search terms.'
+                  : 'Get started by adding your first product to the inventory. Track expiry dates and manage your stock efficiently.'
+                }
+              </p>
+              <div className="flex gap-3">
+                {searchQuery && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    Clear Search
+                  </Button>
+                )}
+                <Button
+                  onClick={handleAddClick}
+                  className="shadow-sm"
+                >
+                  <Plus size={18} className="mr-2" />
+                  Add Your First Product
+                </Button>
+              </div>
             </div>
-            <h3 className="text-lg font-medium text-slate-900">
-              No products found
-            </h3>
-            <p className="text-slate-500 mt-1 max-w-sm text-center">
-              We couldn&apos;t find any products matching your search criteria.
-              Try adjusting your filters.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-6"
-              onClick={() => setSearchQuery('')}
-            >
-              Clear Search
-            </Button>
           </div>
         )}
 
-        {/* Grid */}
+        {/* Products Grid */}
         {!loading && filteredProducts.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onClick={handleProductClick}
-              />
-            ))}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                Your Products ({filteredProducts.length})
+              </h3>
+              <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                {searchQuery && `Showing results for "${searchQuery}"`}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  className="animate-in fade-in slide-in-from-bottom-4"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <ProductCard
+                    product={product}
+                    onClick={handleProductClick}
+                    darkMode={darkMode}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </main>
@@ -414,6 +488,7 @@ const App = () => {
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
             onAlertSent={showToast}
+            darkMode={darkMode}
           />
         )}
       </Sheet>
@@ -473,72 +548,17 @@ const App = () => {
         </div>
       </Dialog>
 
-      {/* Profile Dialog */}
-      <Dialog
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        title="Your Profile"
-        description="Update your account details or delete your account."
-      >
-        {profileLoading ? (
-          <div className="py-6 text-center text-sm text-slate-500">
-            Loading profile...
+      {/* Profile Page */}
+      {showProfile && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-h-[90vh] overflow-y-auto">
+            <Profile
+              onClose={closeProfile}
+              onProfileUpdate={handleProfileUpdate}
+            />
           </div>
-        ) : (
-          <form onSubmit={handleProfileSave} className="space-y-4">
-            {profileError && (
-              <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                {profileError}
-              </div>
-            )}
-            <Input
-              label="Username"
-              name="username"
-              value={profile.username}
-              onChange={handleProfileChange}
-              placeholder="Your username"
-              required
-            />
-            <Input
-              label="Email (optional)"
-              name="email"
-              type="email"
-              value={profile.email || ''}
-              onChange={handleProfileChange}
-              placeholder="you@example.com"
-            />
-            <Input
-              label="WhatsApp Phone Number"
-              name="phoneNumber"
-              value={profile.phoneNumber}
-              onChange={handleProfileChange}
-              placeholder="+92333xxxxxxx"
-              required
-            />
-            <div className="flex items-center justify-between pt-4">
-              <button
-                type="button"
-                onClick={handleDeleteAccount}
-                className="text-xs text-red-600 hover:underline"
-              >
-                Delete account & all products
-              </button>
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" isLoading={profileSaving}>
-                  Save changes
-                </Button>
-              </div>
-            </div>
-          </form>
-        )}
-      </Dialog>
+        </div>
+      )}
 
       {/* Toast Notifications */}
       {toast && (

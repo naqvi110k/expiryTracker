@@ -34,4 +34,10 @@ export const deleteAccount = async () => {
   });
 };
 
+export const changePassword = async (passwordData) => {
+  const response = await axios.put(`${USERS_API_URL}/me/password`, passwordData, {
+    headers: getAuthHeaders(),
+  });
+  return response.data;
+};
 
