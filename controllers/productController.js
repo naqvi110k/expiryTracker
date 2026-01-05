@@ -1,10 +1,16 @@
+const Product = require('../models/productModel');
+const { sendTelegramMessage, sendWhatsApp } = require('../config/twilio');
+const User = require('../models/userModel');
+
 // Controller function to delete a product by ID
 const deleteProduct = async (req, res) => {
     const { id } = req.params;
+    const userId = req.user?.userId;
+
     try {
-        const deletedProduct = await Product.findByIdAndDelete(id);
+        const deletedProduct = await Product.findOneAndDelete({ _id: id, userId });
         if (!deletedProduct) {
-            return res.status(404).json({ error: 'Product not found' });
+            return res.status(404).json({ error: 'Product not found or not owned by user' });
         }
         res.status(200).json({ message: 'Product deleted successfully' });
     } catch (err) {
@@ -13,12 +19,10 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-const Product = require('../models/productModel');
-const { sendTelegramMessage , sendWhatsApp} = require('../config/twilio');
-
 // Controller function to create a new product
 const createProduct = async (req, res) => {
     const { name, batchNumber, expiryDate, quantity, unit, category, description, image } = req.body;
+    const userId = req.user?.userId;
     console.log('Request body:', req.body);
 
     // Basic validation
@@ -26,11 +30,15 @@ const createProduct = async (req, res) => {
         return res.status(400).json({ error: 'All fields are required: name, batchNumber, expiryDate, quantity' });
     }
 
+    if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated for product creation' });
+    }
+
     try {
-        // Check for duplicate product
-        const existingProduct = await Product.findOne({ name, batchNumber });
+        // Check for duplicate product for this user
+        const existingProduct = await Product.findOne({ name, batchNumber, userId });
         if (existingProduct) {
-            return res.status(409).json({ error: 'Product with the same name and batch number already exists.' });
+            return res.status(409).json({ error: 'Product with the same name and batch number already exists for this user.' });
         }
 
         const newProduct = new Product({
@@ -41,7 +49,8 @@ const createProduct = async (req, res) => {
             unit: unit || 'units',
             category: category || 'Uncategorized',
             description: description || '',
-            image: image || null
+            image: image || null,
+            userId
         });
         const savedProduct = await newProduct.save();
         res.status(201).json(savedProduct);
@@ -53,22 +62,25 @@ const createProduct = async (req, res) => {
 
 // Controller function to get all products
 const getProducts = async (req, res) => {
+    const userId = req.user?.userId;
     try {
-        const products = await Product.find();
+        const products = await Product.find({ userId });
         res.status(200).json(products);
     } catch (err) {
+        console.error('Error fetching products:', err);
         res.status(500).json({ error: 'Error fetching products' });
     }
 };
 
-// Controller function to send Telegram expiry alert
+// Controller function to send Telegram/WhatsApp expiry alert
 const sendExpiryAlert = async (req, res) => {
     const { productId } = req.body;
+    const userId = req.user?.userId;
 
     try {
-        const product = await Product.findById(productId);
+        const product = await Product.findOne({ _id: productId, userId });
         if (!product) {
-            return res.status(404).json({ error: 'Product not found' });
+            return res.status(404).json({ error: 'Product not found or not owned by user' });
         }
 
         const today = new Date();
@@ -86,33 +98,26 @@ const sendExpiryAlert = async (req, res) => {
         let alertIcon = '';
 
         if (daysDiff < 0) {
-            // Product is expired
             const daysExpired = Math.abs(daysDiff);
             alertIcon = '❌';
             statusMessage = `*EXPIRED* - ${daysExpired} day${daysExpired !== 1 ? 's' : ''} ago`;
         } else if (daysDiff === 0) {
-            // Expires today
             alertIcon = '🚨';
             statusMessage = '*EXPIRES TODAY*';
         } else if (daysDiff <= 30) {
-            // Expires within a month
             alertIcon = '⚠️';
             statusMessage = `*Expires in ${daysDiff} day${daysDiff !== 1 ? 's' : ''}*`;
         } else if (daysDiff < 365) {
-            // Less than a year - calculate ACCURATE months and days
             alertIcon = '⚠️';
             
-            // Calculate accurate months and days
             const start = new Date(today);
             const end = new Date(expiryDate);
             
             let months = 0;
             let remainingDays = 0;
             
-            // Method 1: Accurate calculation
             let tempDate = new Date(start);
             
-            // Add months until we exceed the expiry date
             while (true) {
                 tempDate.setMonth(tempDate.getMonth() + 1);
                 if (tempDate <= end) {
@@ -123,11 +128,9 @@ const sendExpiryAlert = async (req, res) => {
                 }
             }
             
-            // Calculate remaining days
             const remainingTime = end - tempDate;
             remainingDays = Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
             
-            // Handle edge case where remainingDays might be negative
             if (remainingDays < 0) {
                 remainingDays = 0;
             }
@@ -140,7 +143,6 @@ const sendExpiryAlert = async (req, res) => {
                 statusMessage = `*Expires in ${remainingDays} day${remainingDays !== 1 ? 's' : ''}*`;
             }
         } else {
-            // 365 days or more - show in years
             const yearsLeft = Math.floor(daysDiff / 365);
             const remainingDays = daysDiff % 365;
             const remainingMonths = Math.floor(remainingDays / 30);
@@ -171,8 +173,10 @@ Status: ${statusMessage}
 
 ⚠️ Please check your stock immediately!`;
 
-        // Send the WhatsApp message
-        await sendWhatsApp(message);
+        const user = await User.findById(userId);
+        const phoneNumber = user?.phoneNumber;
+
+        await sendWhatsApp(message, phoneNumber);
 
         res.status(200).json({ 
             message: 'Expiry alert sent to WhatsApp',
@@ -189,6 +193,7 @@ Status: ${statusMessage}
 const updateProduct = async (req, res) => {
     const { id } = req.params;
     const { name, batchNumber, expiryDate, quantity, unit, category, description, image } = req.body;
+    const userId = req.user?.userId;
 
     // Basic validation
     if (!name || !batchNumber || !expiryDate || quantity === undefined) {
@@ -206,19 +211,18 @@ const updateProduct = async (req, res) => {
             description: description || ''
         };
         
-        // Only update image if provided
         if (image) {
             updateData.image = image;
         }
 
-        const updated = await Product.findByIdAndUpdate(
-            id,
+        const updated = await Product.findOneAndUpdate(
+            { _id: id, userId },
             updateData,
             { new: true, runValidators: true }
         );
 
         if (!updated) {
-            return res.status(404).json({ error: 'Product not found' });
+            return res.status(404).json({ error: 'Product not found or not owned by user' });
         }
 
         res.status(200).json(updated);

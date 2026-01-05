@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -11,7 +10,8 @@ const productSchema = new Schema({
     unit: { type: String, default: 'units' },
     category: { type: String, default: 'Uncategorized' },
     description: { type: String, default: '' },
-    image: { type: String, default: null } // Store base64 image data
+    image: { type: String, default: null }, // Store base64 image data
+    userId: { type: Schema.Types.ObjectId, ref: 'User', default: null } // Owner of this product
 });
 
 // Create Product model from schema

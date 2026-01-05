@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const productRoutes = require('./routes/productRoutes');
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const cors = require('cors');
 
 // Load environment variables
@@ -28,7 +30,13 @@ mongoose.connect(process.env.MONGO_URI)
         console.warn('  The server will continue running, but database operations will fail');
     });
 
-// Use product routes
+// Auth routes
+app.use('/api/auth', authRoutes);
+
+// User profile routes
+app.use('/api/users', userRoutes);
+
+// Product routes (protected)
 app.use('/api/products', productRoutes);
 
 // Start the server

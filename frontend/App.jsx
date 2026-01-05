@@ -6,9 +6,18 @@ import ProductForm from './components/ProductForm';
 import Sheet from './components/ui/Sheet';
 import Dialog from './components/ui/Dialog';
 import Button from './components/ui/Button';
-import { Search, Plus, Boxes, RefreshCw } from 'lucide-react';
+import Input from './components/ui/Input';
+import { Search, Plus, Boxes, RefreshCw, LogOut, User as UserIcon } from 'lucide-react';
+import Login from './components/Login';
+import Register from './components/Register';
+import { getCurrentUser, logout as logoutUser } from './services/authService';
+import { getProfile, updateProfile, deleteAccount } from './services/userService';
 
 const App = () => {
+  // Auth state
+  const [authUser, setAuthUser] = useState(null);
+  const [authView, setAuthView] = useState('login'); // 'login' | 'register'
+
   // State
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,9 +33,22 @@ const App = () => {
   // Toast State
   const [toast, setToast] = useState(null);
 
-  // Initial Data Fetch
+  // Profile state
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profile, setProfile] = useState({ username: '', email: '', phoneNumber: '' });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  // Initialize auth + data
   useEffect(() => {
-    fetchData();
+    const user = getCurrentUser();
+    if (user) {
+      setAuthUser(user);
+      fetchData();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   // Toast Auto-dismiss
@@ -41,7 +63,6 @@ const App = () => {
     setLoading(true);
     try {
       const data = await getProducts();
-      // Normalize data to use 'id' field instead of '_id' from MongoDB
       const normalizedData = data.map(product => ({
         ...product,
         id: product._id || product.id
@@ -58,6 +79,89 @@ const App = () => {
     setToast({ id: Date.now().toString(), type, message });
   };
 
+  const handleAuthSuccess = (user) => {
+    setAuthUser(user);
+    setAuthView('login');
+    fetchData();
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setAuthUser(null);
+    setProducts([]);
+  };
+
+  const openProfile = async () => {
+    setIsProfileOpen(true);
+    setProfileError('');
+    setProfileLoading(true);
+    try {
+      const data = await getProfile();
+      setProfile({
+        username: data.username || '',
+        email: data.email || '',
+        phoneNumber: data.phoneNumber || '',
+      });
+    } catch (err) {
+      setProfileError(
+        err?.response?.data?.error || 'Failed to load profile. Please try again.'
+      );
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfile((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleProfileSave = async (e) => {
+    e.preventDefault();
+    setProfileError('');
+
+    if (!profile.phoneNumber.startsWith('+')) {
+      setProfileError('Phone number must start with + and country code');
+      return;
+    }
+
+    setProfileSaving(true);
+    try {
+      const updated = await updateProfile(profile);
+      setAuthUser((prev) => ({
+        ...(prev || {}),
+        username: updated.username,
+        phoneNumber: updated.phoneNumber,
+      }));
+      showToast('success', 'Profile updated successfully');
+      setIsProfileOpen(false);
+    } catch (err) {
+      setProfileError(
+        err?.response?.data?.error || 'Failed to update profile. Please try again.'
+      );
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirm = window.confirm(
+      'Are you sure you want to delete your account and all products? This cannot be undone.'
+    );
+    if (!confirm) return;
+
+    try {
+      await deleteAccount();
+      showToast('success', 'Account deleted');
+      handleLogout();
+    } catch (err) {
+      showToast(
+        'error',
+        err?.response?.data?.error || 'Failed to delete account. Please try again.'
+      );
+    }
+  };
+
   // Filter Logic
   const filteredProducts = useMemo(() => {
     return products.filter(product => 
@@ -72,11 +176,11 @@ const App = () => {
     setSelectedProduct(product);
   };
 
-  const handleEditClick = (product) => {
+  const handleEditClick = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteClick = (product) => {
+  const handleDeleteClick = () => {
     setIsDeleteModalOpen(true);
   };
   
@@ -88,7 +192,6 @@ const App = () => {
     setActionLoading(true);
     try {
       const newProduct = await createProduct(data);
-      // Normalize response
       const normalizedProduct = {
         ...newProduct,
         id: newProduct._id || newProduct.id
@@ -109,13 +212,11 @@ const App = () => {
     setActionLoading(true);
     try {
       const updated = await updateProduct(selectedProduct.id, data);
-      // Normalize response
       const normalizedProduct = {
         ...updated,
         id: updated._id || updated.id
       };
       
-      // Update local state
       setProducts(prev => prev.map(p => p.id === normalizedProduct.id ? normalizedProduct : p));
       setSelectedProduct(normalizedProduct);
       setIsEditModalOpen(false);
@@ -134,10 +235,9 @@ const App = () => {
     try {
       await deleteProduct(selectedProduct.id);
       
-      // Update local state
       setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
-      setSelectedProduct(null); // Close sheet
-      setIsDeleteModalOpen(false); // Close dialog
+      setSelectedProduct(null);
+      setIsDeleteModalOpen(false);
       showToast('success', 'Product deleted successfully');
     } catch (error) {
       showToast('error', 'Failed to delete product');
@@ -146,9 +246,23 @@ const App = () => {
     }
   };
 
+  // If not authenticated, show auth screens
+  if (!authUser) {
+    return authView === 'login' ? (
+      <Login
+        onSuccess={handleAuthSuccess}
+        onSwitchToRegister={() => setAuthView('register')}
+      />
+    ) : (
+      <Register
+        onSuccess={handleAuthSuccess}
+        onSwitchToLogin={() => setAuthView('login')}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
-      
       {/* Navbar */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
@@ -160,22 +274,48 @@ const App = () => {
               <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 whitespace-nowrap">
                 Inventa
               </h1>
-              <p className="text-xs text-slate-500 font-medium whitespace-nowrap">Product Dashboard</p>
+              <p className="text-xs text-slate-500 font-medium whitespace-nowrap">
+                Product Dashboard
+              </p>
             </div>
           </div>
           
           <div className="flex items-center space-x-3 flex-shrink-0 ml-4">
-             <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200 flex items-center whitespace-nowrap">
-                <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider mr-2">Total Items</span>
-                <span className="text-lg font-bold text-blue-900">{products.length}</span>
-             </div>
+            <button
+              type="button"
+              onClick={openProfile}
+              className="hidden sm:flex flex-col items-end mr-2 text-right"
+            >
+              <span className="text-xs text-slate-500">Logged in as</span>
+              <span className="text-sm font-semibold text-slate-800 flex items-center gap-1">
+                <UserIcon size={14} className="text-slate-500" />
+                {authUser?.username}
+              </span>
+            </button>
+            <div className="bg-blue-50 px-3 py-1 rounded-full border border-blue-200 flex items-center whitespace-nowrap">
+              <span className="text-xs font-semibold text-blue-700 uppercase tracking-wider mr-2">
+                Total Items
+              </span>
+              <span className="text-lg font-bold text-blue-900">
+                {products.length}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="md"
+              className="ml-2 text-slate-600"
+              onClick={handleLogout}
+              title="Logout"
+            >
+              <LogOut size={18} className="mr-1" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
         {/* Controls */}
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <div className="relative flex-1 group">
@@ -192,12 +332,24 @@ const App = () => {
           </div>
           
           <div className="flex gap-3 flex-shrink-0">
-             <Button variant="outline" onClick={fetchData} title="Refresh Data" size="md">
-                <RefreshCw size={18} className={`${loading ? 'animate-spin' : ''}`} />
-             </Button>
-             <Button size="md" onClick={handleAddClick} className="whitespace-nowrap">
-               <Plus size={18} className="mr-2" /> Add Product
-             </Button>
+            <Button
+              variant="outline"
+              onClick={fetchData}
+              title="Refresh Data"
+              size="md"
+            >
+              <RefreshCw
+                size={18}
+                className={`${loading ? 'animate-spin' : ''}`}
+              />
+            </Button>
+            <Button
+              size="md"
+              onClick={handleAddClick}
+              className="whitespace-nowrap"
+            >
+              <Plus size={18} className="mr-2" /> Add Product
+            </Button>
           </div>
         </div>
 
@@ -207,7 +359,9 @@ const App = () => {
             <div className="relative">
               <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin"></div>
             </div>
-            <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading inventory...</p>
+            <p className="mt-4 text-slate-500 font-medium animate-pulse">
+              Loading inventory...
+            </p>
           </div>
         )}
 
@@ -215,13 +369,20 @@ const App = () => {
         {!loading && filteredProducts.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200 border-dashed">
             <div className="bg-slate-50 p-4 rounded-full mb-4">
-               <Search className="h-8 w-8 text-slate-400" />
+              <Search className="h-8 w-8 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900">No products found</h3>
+            <h3 className="text-lg font-medium text-slate-900">
+              No products found
+            </h3>
             <p className="text-slate-500 mt-1 max-w-sm text-center">
-              We couldn't find any products matching your search criteria. Try adjusting your filters.
+              We couldn&apos;t find any products matching your search criteria.
+              Try adjusting your filters.
             </p>
-            <Button variant="outline" className="mt-6" onClick={() => setSearchQuery('')}>
+            <Button
+              variant="outline"
+              className="mt-6"
+              onClick={() => setSearchQuery('')}
+            >
               Clear Search
             </Button>
           </div>
@@ -230,11 +391,11 @@ const App = () => {
         {/* Grid */}
         {!loading && filteredProducts.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map(product => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                onClick={handleProductClick} 
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onClick={handleProductClick}
               />
             ))}
           </div>
@@ -242,14 +403,14 @@ const App = () => {
       </main>
 
       {/* Detail Slide-over */}
-      <Sheet 
-        isOpen={!!selectedProduct} 
+      <Sheet
+        isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
         title="Product Details"
       >
         {selectedProduct && (
-          <ProductDetails 
-            product={selectedProduct} 
+          <ProductDetails
+            product={selectedProduct}
             onEdit={handleEditClick}
             onDelete={handleDeleteClick}
             onAlertSent={showToast}
@@ -258,15 +419,15 @@ const App = () => {
       </Sheet>
 
       {/* Edit Dialog */}
-      <Dialog 
-        isOpen={isEditModalOpen} 
+      <Dialog
+        isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title="Edit Product"
         description="Make changes to the product inventory details below."
       >
         {selectedProduct && (
-          <ProductForm 
-            initialData={selectedProduct} 
+          <ProductForm
+            initialData={selectedProduct}
             onSave={handleUpdateProduct}
             onCancel={() => setIsEditModalOpen(false)}
             isLoading={actionLoading}
@@ -275,13 +436,13 @@ const App = () => {
       </Dialog>
       
       {/* Add Dialog */}
-      <Dialog 
-        isOpen={isAddModalOpen} 
+      <Dialog
+        isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         title="Add New Product"
         description="Enter the details for the new product to add to inventory."
       >
-        <ProductForm 
+        <ProductForm
           onSave={handleCreateProduct}
           onCancel={() => setIsAddModalOpen(false)}
           isLoading={actionLoading}
@@ -289,19 +450,22 @@ const App = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog 
-        isOpen={isDeleteModalOpen} 
+      <Dialog
+        isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         title="Delete Product"
         description="Are you sure you want to delete this product? This action cannot be undone."
       >
         <div className="flex justify-end gap-3 mt-6">
-          <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setIsDeleteModalOpen(false)}
+          >
             Cancel
           </Button>
-          <Button 
-            variant="danger" 
-            onClick={handleConfirmDelete} 
+          <Button
+            variant="danger"
+            onClick={handleConfirmDelete}
             isLoading={actionLoading}
           >
             Delete Product
@@ -309,23 +473,103 @@ const App = () => {
         </div>
       </Dialog>
 
+      {/* Profile Dialog */}
+      <Dialog
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        title="Your Profile"
+        description="Update your account details or delete your account."
+      >
+        {profileLoading ? (
+          <div className="py-6 text-center text-sm text-slate-500">
+            Loading profile...
+          </div>
+        ) : (
+          <form onSubmit={handleProfileSave} className="space-y-4">
+            {profileError && (
+              <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {profileError}
+              </div>
+            )}
+            <Input
+              label="Username"
+              name="username"
+              value={profile.username}
+              onChange={handleProfileChange}
+              placeholder="Your username"
+              required
+            />
+            <Input
+              label="Email (optional)"
+              name="email"
+              type="email"
+              value={profile.email || ''}
+              onChange={handleProfileChange}
+              placeholder="you@example.com"
+            />
+            <Input
+              label="WhatsApp Phone Number"
+              name="phoneNumber"
+              value={profile.phoneNumber}
+              onChange={handleProfileChange}
+              placeholder="+92333xxxxxxx"
+              required
+            />
+            <div className="flex items-center justify-between pt-4">
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                className="text-xs text-red-600 hover:underline"
+              >
+                Delete account & all products
+              </button>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsProfileOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" isLoading={profileSaving}>
+                  Save changes
+                </Button>
+              </div>
+            </div>
+          </form>
+        )}
+      </Dialog>
+
       {/* Toast Notifications */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div className={`flex items-center px-4 py-3 rounded-lg shadow-lg border ${
-            toast.type === 'success' ? 'bg-white border-emerald-200 text-emerald-800' :
-            toast.type === 'error' ? 'bg-white border-red-200 text-red-800' :
-            'bg-white border-blue-200 text-blue-800'
-          }`}>
-             <div className={`mr-3 rounded-full p-1 ${
-                toast.type === 'success' ? 'bg-emerald-100' :
-                toast.type === 'error' ? 'bg-red-100' : 'bg-blue-100'
-             }`}>
-                {toast.type === 'success' ? <div className="h-2 w-2 rounded-full bg-emerald-500" /> :
-                 toast.type === 'error' ? <div className="h-2 w-2 rounded-full bg-red-500" /> :
-                 <div className="h-2 w-2 rounded-full bg-blue-500" />}
-             </div>
-             <p className="text-sm font-medium">{toast.message}</p>
+          <div
+            className={`flex items-center px-4 py-3 rounded-lg shadow-lg border ${
+              toast.type === 'success'
+                ? 'bg-white border-emerald-200 text-emerald-800'
+                : toast.type === 'error'
+                ? 'bg-white border-red-200 text-red-800'
+                : 'bg-white border-blue-200 text-blue-800'
+            }`}
+          >
+            <div
+              className={`mr-3 rounded-full p-1 ${
+                toast.type === 'success'
+                  ? 'bg-emerald-100'
+                  : toast.type === 'error'
+                  ? 'bg-red-100'
+                  : 'bg-blue-100'
+              }`}
+            >
+              {toast.type === 'success' ? (
+                <div className="h-2 w-2 rounded-full bg-emerald-500" />
+              ) : toast.type === 'error' ? (
+                <div className="h-2 w-2 rounded-full bg-red-500" />
+              ) : (
+                <div className="h-2 w-2 rounded-full bg-blue-500" />
+              )}
+            </div>
+            <p className="text-sm font-medium">{toast.message}</p>
           </div>
         </div>
       )}

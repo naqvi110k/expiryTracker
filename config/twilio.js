@@ -38,11 +38,17 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-async function sendWhatsApp(message) {
+async function sendWhatsApp(message, toPhoneNumber) {
   try {
+    const to = toPhoneNumber || process.env.SHOPKEEPER_WHATSAPP_TO;
+
+    if (!to) {
+      throw new Error('No destination WhatsApp number provided and SHOPKEEPER_WHATSAPP_TO is not set');
+    }
+
     const response = await client.messages.create({
       from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`, 
-      to: `whatsapp:${process.env.SHOPKEEPER_WHATSAPP_TO}`,                           // whatsapp:+92333xxxxxx
+      to: `whatsapp:${to}`,                           // whatsapp:+92333xxxxxx
       body: message
     });
 
