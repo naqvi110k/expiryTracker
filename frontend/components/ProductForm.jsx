@@ -269,7 +269,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading, darkMode = fals
           value={formData.description}
           onChange={handleChange}
           rows={3}
-          className={`flex w-full rounded-md border px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-slate-700 border-slate-600 text-white focus:ring-cyan-500' : 'bg-white border-slate-300 text-slate-900 focus:ring-blue-400'}`}
+          className={`flex w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-300 focus:ring-cyan-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:ring-blue-400'}`}
           placeholder="Enter product description..."
           required
         />

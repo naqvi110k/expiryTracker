@@ -7,7 +7,9 @@ const bodyParser = require('body-parser');
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const cors = require('cors');
+const { startNotificationScheduler } = require('./services/notificationScheduler');
 
 // Load environment variables
 dotenv.config();
@@ -39,8 +41,18 @@ app.use('/api/users', userRoutes);
 // Product routes (protected)
 app.use('/api/products', productRoutes);
 
+// Notification routes (for manual testing)
+app.use('/api/notifications', notificationRoutes);
+
+// Start automated notification scheduler
+startNotificationScheduler();
+
 // Start the server
-app.listen(5000,"0.0.0.0", () => {
-    console.log('Server is running on port 5000');
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server is running on port ${PORT}`);
 });
+
+// Export for Vercel serverless
+module.exports = app;
     

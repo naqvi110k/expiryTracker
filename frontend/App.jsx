@@ -522,6 +522,7 @@ const App = () => {
         onClose={() => setIsEditModalOpen(false)}
         title="Edit Product"
         description="Make changes to the product inventory details below."
+        darkMode={darkMode}
       >
         {selectedProduct && (
           <ProductForm
@@ -529,6 +530,7 @@ const App = () => {
             onSave={handleUpdateProduct}
             onCancel={() => setIsEditModalOpen(false)}
             isLoading={actionLoading}
+            darkMode={darkMode}
           />
         )}
       </Dialog>
@@ -539,11 +541,13 @@ const App = () => {
         onClose={() => setIsAddModalOpen(false)}
         title="Add New Product"
         description="Enter the details for the new product to add to inventory."
+        darkMode={darkMode}
       >
         <ProductForm
           onSave={handleCreateProduct}
           onCancel={() => setIsAddModalOpen(false)}
           isLoading={actionLoading}
+          darkMode={darkMode}
         />
       </Dialog>
 
@@ -553,6 +557,7 @@ const App = () => {
         onClose={() => setIsDeleteModalOpen(false)}
         title="Delete Product"
         description="Are you sure you want to delete this product? This action cannot be undone."
+        darkMode={darkMode}
       >
         <div className="flex justify-end gap-3 mt-6">
           <Button

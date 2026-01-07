@@ -13,7 +13,7 @@ const Input = ({ label, error, className = '', id, darkMode, ...props }) => {
       )}
       <input
         id={inputId}
-        className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-500 focus:ring-blue-500' : 'bg-white border-slate-300 text-slate-900 focus:ring-blue-400'} ${error ? 'border-red-500 focus:ring-red-500' : ''} ${className}`}
+        className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${isDarkMode ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-300 focus:ring-blue-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:ring-blue-400'} ${error ? 'border-red-500 focus:ring-red-500' : ''} ${className}`}
         {...props}
       />
       {error && (

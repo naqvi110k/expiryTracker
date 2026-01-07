@@ -310,6 +310,7 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
+                  className={darkMode ? '!border-slate-600 !text-slate-300 hover:!bg-slate-700' : ''}
                 >
                   <Edit3 size={16} className="mr-2" />
                   Edit Profile
