@@ -148,7 +148,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading, darkMode = fals
       {/* Image Upload Section */}
       <div className="space-y-3">
         <label className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Upload Product Image</label>
-        <div className={`border-2 border-dashed rounded-lg p-6 transition-colors cursor-pointer ${darkMode ? 'border-slate-600 hover:border-cyan-500 bg-slate-700/50' : 'border-slate-300 hover:border-blue-400'}`}>
+        <div className={`border-2 border-dashed rounded-lg p-4 sm:p-6 transition-colors cursor-pointer ${darkMode ? 'border-slate-600 hover:border-cyan-500 bg-slate-700/50' : 'border-slate-300 hover:border-blue-400'}`}>
           <input
             type="file"
             accept="image/*"
@@ -160,13 +160,13 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading, darkMode = fals
           <label htmlFor="image-upload" className="flex flex-col items-center gap-2 cursor-pointer">
             {extracting ? (
               <>
-                <Loader className={`w-8 h-8 animate-spin ${darkMode ? 'text-cyan-500' : 'text-blue-500'}`} />
-                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Extracting product details...</p>
+                <Loader className={`w-6 h-6 sm:w-8 sm:h-8 animate-spin ${darkMode ? 'text-cyan-500' : 'text-blue-500'}`} />
+                <p className={`text-xs sm:text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Extracting product details...</p>
               </>
             ) : (
               <>
-                <Upload className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Click to upload an image of the product</p>
+                <Upload className={`w-6 h-6 sm:w-8 sm:h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                <p className={`text-xs sm:text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Click to upload an image of the product</p>
               </>
             )}
           </label>
@@ -175,15 +175,15 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading, darkMode = fals
         {/* Image Preview */}
         {imagePreview && (
           <div className="mt-4">
-            <p className={`text-xs mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Image Preview:</p>
+            <p className={`text-xs sm:text-sm mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Image Preview:</p>
             <img
               src={imagePreview}
               alt="Product preview"
-              className={`w-32 h-32 object-cover rounded-lg border ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}
+              className={`w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg border ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}
             />
           </div>
         )}
-
+        
         {/* Error Message */}
         {extractError && (
           <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -209,7 +209,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading, darkMode = fals
         required
       />
       
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="Category"
           name="category"
@@ -230,7 +230,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading, darkMode = fals
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="Quantity"
           name="quantity"

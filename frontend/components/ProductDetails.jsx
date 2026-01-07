@@ -119,7 +119,7 @@ const ProductDetails = ({ product, onEdit, onDelete, onAlertSent, darkMode = fal
       </div>
 
       {/* Actions Footer */}
-      <div className={`pt-6 border-t mt-4 grid grid-cols-2 gap-3 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'}`}>
+      <div className={`pt-4 sm:pt-6 border-t mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'}`}>
         <Button 
           variant="outline" 
           onClick={handleSendAlert}
@@ -135,11 +135,11 @@ const ProductDetails = ({ product, onEdit, onDelete, onAlertSent, darkMode = fal
         >
           {alertSent ? (
             <>
-              <CheckCircle size={16} /> Sent
+              <CheckCircle size={16} /> <span className="sm:hidden">Sent</span><span className="hidden sm:inline">Sent</span>
             </>
           ) : (
             <>
-              <MessageCircle size={16} /> Send Alert
+              <MessageCircle size={16} /> <span className="sm:hidden">Alert</span><span className="hidden sm:inline">Send Alert</span>
             </>
           )}
         </Button>
@@ -148,14 +148,14 @@ const ProductDetails = ({ product, onEdit, onDelete, onAlertSent, darkMode = fal
           onClick={() => onEdit(product)}
           className={`w-full flex items-center justify-center gap-2 ${darkMode ? '!border-slate-600 !text-slate-300 hover:!bg-slate-700' : ''}`}
         >
-          <Edit size={16} /> Edit
+          <Edit size={16} /> <span className="sm:hidden">Edit</span><span className="hidden sm:inline">Edit</span>
         </Button>
         <Button 
           variant="outline" 
           onClick={() => onDelete(product)}
           className={`w-full flex items-center justify-center gap-2 ${darkMode ? '!text-red-400 !border-red-700 hover:!bg-red-900/20' : '!text-red-600 !border-red-300 hover:!bg-red-50 hover:!border-red-400'}`}
         >
-          <Trash2 size={16} /> Delete
+          <Trash2 size={16} /> <span className="sm:hidden">Delete</span><span className="hidden sm:inline">Delete</span>
         </Button>
       </div>
     </div>

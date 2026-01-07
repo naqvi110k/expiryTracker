@@ -59,19 +59,19 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
         </button>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className={`max-w-md w-full ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl rounded-3xl p-8 border ${darkMode ? 'border-slate-700' : 'border-slate-200'} backdrop-blur-xl`}>
+      <div className="flex-1 flex items-center justify-center px-4 py-6 sm:py-8">
+        <div className={`max-w-sm w-full ${darkMode ? 'bg-slate-800' : 'bg-white'} shadow-2xl rounded-2xl sm:rounded-3xl p-6 sm:p-8 border ${darkMode ? 'border-slate-700' : 'border-slate-200'} backdrop-blur-xl`}>
           {/* Header Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="bg-gradient-to-tr from-blue-600 to-cyan-500 p-4 rounded-2xl text-white shadow-lg">
-              <LogIn size={32} />
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="bg-gradient-to-tr from-blue-600 to-cyan-500 p-3 sm:p-4 rounded-2xl text-white shadow-lg">
+              <LogIn size={28} className="sm:w-8 sm:h-8" />
             </div>
           </div>
 
-          <h1 className={`text-3xl font-bold text-center mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          <h1 className={`text-2xl sm:text-3xl font-bold text-center mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
             Welcome Back
           </h1>
-          <p className={`text-sm text-center mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p className={`text-xs sm:text-sm text-center mb-4 sm:mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             Login to your Inventa account
           </p>
 
@@ -81,7 +81,7 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             <Input
               label="Username"
               name="username"
@@ -103,7 +103,7 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
 
             <Button
               type="submit"
-              className="w-full mt-6"
+              className="w-full mt-4 sm:mt-6"
               isLoading={loading}
             >
               {loading ? 'Signing in...' : 'Sign In'}
@@ -111,13 +111,13 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
           </form>
 
           {/* Divider */}
-          <div className="my-6 flex items-center">
+          <div className="my-4 sm:my-6 flex items-center">
             <div className={`flex-1 h-px ${darkMode ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
             <span className={`px-3 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>OR</span>
             <div className={`flex-1 h-px ${darkMode ? 'bg-slate-700' : 'bg-slate-300'}`}></div>
           </div>
 
-          <p className={`text-sm text-center ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          <p className={`text-xs sm:text-sm text-center ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
             Don&apos;t have an account?{' '}
             <button
               type="button"

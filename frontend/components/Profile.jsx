@@ -265,20 +265,20 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
 
       {/* Tabs */}
       <div className={`border-b ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-        <nav className="flex">
+        <nav className="flex flex-wrap">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'profile'
                 ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
                 : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            Profile Information
+            Profile
           </button>
           <button
             onClick={() => setActiveTab('security')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'security'
                 ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
                 : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -288,13 +288,13 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
           </button>
           <button
             onClick={() => setActiveTab('stats')}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'stats'
                 ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
                 : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            Account Stats
+            Stats
           </button>
         </nav>
       </div>
