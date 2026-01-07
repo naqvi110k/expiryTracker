@@ -4,7 +4,7 @@ import Button from './ui/Button';
 import { extractProductDetails } from '../services/geminiService';
 import { Upload, Loader } from 'lucide-react';
 
-const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
+const ProductForm = ({ initialData, onSave, onCancel, isLoading, darkMode = false }) => {
   const [formData, setFormData] = useState(initialData || {
     name: '',
     category: '',
@@ -147,8 +147,8 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Image Upload Section */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-slate-700">Upload Product Image</label>
-        <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 hover:border-blue-400 transition-colors cursor-pointer">
+        <label className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Upload Product Image</label>
+        <div className={`border-2 border-dashed rounded-lg p-6 transition-colors cursor-pointer ${darkMode ? 'border-slate-600 hover:border-cyan-500 bg-slate-700/50' : 'border-slate-300 hover:border-blue-400'}`}>
           <input
             type="file"
             accept="image/*"
@@ -160,13 +160,13 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
           <label htmlFor="image-upload" className="flex flex-col items-center gap-2 cursor-pointer">
             {extracting ? (
               <>
-                <Loader className="w-8 h-8 text-blue-500 animate-spin" />
-                <p className="text-sm text-slate-600">Extracting product details...</p>
+                <Loader className={`w-8 h-8 animate-spin ${darkMode ? 'text-cyan-500' : 'text-blue-500'}`} />
+                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Extracting product details...</p>
               </>
             ) : (
               <>
-                <Upload className="w-8 h-8 text-slate-400" />
-                <p className="text-sm text-slate-600">Click to upload an image of the product</p>
+                <Upload className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Click to upload an image of the product</p>
               </>
             )}
           </label>
@@ -175,11 +175,11 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
         {/* Image Preview */}
         {imagePreview && (
           <div className="mt-4">
-            <p className="text-xs text-slate-500 mb-2">Image Preview:</p>
+            <p className={`text-xs mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Image Preview:</p>
             <img
               src={imagePreview}
               alt="Product preview"
-              className="w-32 h-32 object-cover rounded-lg border border-slate-300"
+              className={`w-32 h-32 object-cover rounded-lg border ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}
             />
           </div>
         )}
@@ -205,6 +205,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
         value={formData.name}
         onChange={handleChange}
         placeholder="e.g. Amoxicillin 500mg"
+        darkMode={darkMode}
         required
       />
       
@@ -215,6 +216,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
           value={formData.category}
           onChange={handleChange}
           placeholder="e.g. Antibiotics"
+          darkMode={darkMode}
           required
         />
         <Input
@@ -223,6 +225,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
           value={formData.batchNumber}
           onChange={handleChange}
           placeholder="e.g. B-12345"
+          darkMode={darkMode}
           required
         />
       </div>
@@ -235,6 +238,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
           min="0"
           value={formData.quantity}
           onChange={handleChange}
+          darkMode={darkMode}
           required
         />
         <Input
@@ -243,6 +247,7 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
           value={formData.unit}
           onChange={handleChange}
           placeholder="e.g. tablets"
+          darkMode={darkMode}
           required
         />
       </div>
@@ -253,23 +258,24 @@ const ProductForm = ({ initialData, onSave, onCancel, isLoading }) => {
         type="date"
         value={formData.expiryDate}
         onChange={handleChange}
+        darkMode={darkMode}
         required
       />
 
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">Description</label>
+        <label className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Description</label>
         <textarea
           name="description"
           value={formData.description}
           onChange={handleChange}
           rows={3}
-          className="flex w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+          className={`flex w-full rounded-md border px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${darkMode ? 'bg-slate-700 border-slate-600 text-white focus:ring-cyan-500' : 'bg-white border-slate-300 text-slate-900 focus:ring-blue-400'}`}
           placeholder="Enter product description..."
           required
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+      <div className={`flex justify-end gap-3 pt-4 border-t ${darkMode ? 'border-slate-700' : 'border-slate-100'}`}>
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel
         </Button>

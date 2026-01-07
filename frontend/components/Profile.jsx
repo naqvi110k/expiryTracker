@@ -326,6 +326,7 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
                     value={editForm.username}
                     onChange={handleEditFormChange}
                     placeholder="Your username"
+                    darkMode={darkMode}
                     required
                   />
                   <Input
@@ -335,6 +336,7 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
                     value={editForm.email}
                     onChange={handleEditFormChange}
                     placeholder="you@example.com"
+                    darkMode={darkMode}
                   />
                 </div>
                 <Input
@@ -343,6 +345,7 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
                   value={editForm.phoneNumber}
                   onChange={handleEditFormChange}
                   placeholder="+92333xxxxxxx"
+                  darkMode={darkMode}
                   required
                 />
                 <div className="flex gap-3 pt-2">
@@ -433,12 +436,13 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
                   value={passwordForm.currentPassword}
                   onChange={handlePasswordFormChange}
                   placeholder="Enter current password"
+                  darkMode={darkMode}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('current')}
-                  className="absolute right-3 top-9 text-slate-400 hover:text-slate-600"
+                  className={`absolute right-3 top-9 ${darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   {showPasswords.current ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -452,12 +456,13 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
                   value={passwordForm.newPassword}
                   onChange={handlePasswordFormChange}
                   placeholder="Enter new password"
+                  darkMode={darkMode}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('new')}
-                  className="absolute right-3 top-9 text-slate-400 hover:text-slate-600"
+                  className={`absolute right-3 top-9 ${darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   {showPasswords.new ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -471,12 +476,13 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
                   value={passwordForm.confirmPassword}
                   onChange={handlePasswordFormChange}
                   placeholder="Confirm new password"
+                  darkMode={darkMode}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => togglePasswordVisibility('confirm')}
-                  className="absolute right-3 top-9 text-slate-400 hover:text-slate-600"
+                  className={`absolute right-3 top-9 ${darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
                 >
                   {showPasswords.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -498,26 +504,26 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+              <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/30 border-blue-700' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'}`}>
                 <div className="flex items-center space-x-3 mb-3">
                   <Package size={24} className="text-blue-600" />
-                  <h3 className="font-semibold text-slate-900">Total Products</h3>
+                  <h3 className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Total Products</h3>
                 </div>
-                <p className="text-3xl font-bold text-blue-700">{stats.totalProducts}</p>
-                <p className="text-sm text-blue-600 mt-1">Products in inventory</p>
+                <p className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>{stats.totalProducts}</p>
+                <p className={`text-sm mt-1 ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>Products in inventory</p>
               </div>
 
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl border border-emerald-200">
+              <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gradient-to-br from-emerald-900/30 to-emerald-800/30 border-emerald-700' : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200'}`}>
                 <div className="flex items-center space-x-3 mb-3">
                   <Calendar size={24} className="text-emerald-600" />
-                  <h3 className="font-semibold text-slate-900">Account Age</h3>
+                  <h3 className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Account Age</h3>
                 </div>
-                <p className="text-3xl font-bold text-emerald-700">
+                <p className={`text-3xl font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
                   {stats.accountCreated ?
                     Math.floor((new Date() - new Date(stats.accountCreated)) / (1000 * 60 * 60 * 24)) : 0
                   }
                 </p>
-                <p className="text-sm text-emerald-600 mt-1">Days since registration</p>
+                <p className={`text-sm mt-1 ${darkMode ? 'text-emerald-300' : 'text-emerald-600'}`}>Days since registration</p>
               </div>
             </div>
           </div>
@@ -525,14 +531,14 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
       </div>
 
       {/* Danger Zone */}
-      <div className="border-t border-slate-200 bg-red-50 px-6 py-4">
+      <div className={`border-t px-6 py-4 ${darkMode ? 'border-slate-700 bg-red-900/20' : 'border-slate-200 bg-red-50'}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-red-900 flex items-center">
+            <h3 className={`font-semibold flex items-center ${darkMode ? 'text-red-400' : 'text-red-900'}`}>
               <Trash2 size={16} className="mr-2" />
               Danger Zone
             </h3>
-            <p className="text-sm text-red-700 mt-1">
+            <p className={`text-sm mt-1 ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
               Permanently delete your account and all associated data. This action cannot be undone.
             </p>
           </div>

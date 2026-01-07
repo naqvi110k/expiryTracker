@@ -128,7 +128,9 @@ const ProductDetails = ({ product, onEdit, onDelete, onAlertSent, darkMode = fal
           className={`w-full flex items-center justify-center gap-2 ${
             alertSent 
               ? '!border-emerald-300 !bg-emerald-50 !text-emerald-600' 
-              : '!border-green-300 hover:!bg-green-50 hover:!border-green-400 !text-green-600'
+              : darkMode 
+                ? '!border-green-600 hover:!bg-green-900/20 !text-green-400'
+                : '!border-green-300 hover:!bg-green-50 hover:!border-green-400 !text-green-600'
           }`}
         >
           {alertSent ? (
@@ -144,14 +146,14 @@ const ProductDetails = ({ product, onEdit, onDelete, onAlertSent, darkMode = fal
         <Button 
           variant="outline" 
           onClick={() => onEdit(product)}
-          className="w-full flex items-center justify-center gap-2"
+          className={`w-full flex items-center justify-center gap-2 ${darkMode ? '!border-slate-600 !text-slate-300 hover:!bg-slate-700' : ''}`}
         >
           <Edit size={16} /> Edit
         </Button>
         <Button 
           variant="outline" 
           onClick={() => onDelete(product)}
-          className="w-full flex items-center justify-center gap-2 !text-red-600 !border-red-300 hover:!bg-red-50 hover:!border-red-400"
+          className={`w-full flex items-center justify-center gap-2 ${darkMode ? '!text-red-400 !border-red-700 hover:!bg-red-900/20' : '!text-red-600 !border-red-300 hover:!bg-red-50 hover:!border-red-400'}`}
         >
           <Trash2 size={16} /> Delete
         </Button>

@@ -75,24 +75,34 @@ const generateExpiryReport = async (req, res) => {
         // Stats Grid - Fixed positioning
         const statsY = 170;
         const statWidth = 115;
-        const statHeight = 90;
+        const statHeight = 80;
         const statGap = 10;
         
         const stats = [
-            { label: 'EXPIRED', value: expiredProducts.length, color: '#DC2626', bg: '#FEE2E2', icon: '×' },
-            { label: 'CRITICAL', value: criticalProducts.length, color: '#EA580C', bg: '#FFEDD5', icon: '!' },
-            { label: 'WARNING', value: warningProducts.length, color: '#F59E0B', bg: '#FEF3C7', icon: '△' },
-            { label: 'SAFE', value: safeProducts.length, color: '#10B981', bg: '#D1FAE5', icon: '✓' }
+            { label: 'EXPIRED', value: expiredProducts.length, color: '#DC2626', bg: '#FEE2E2' },
+            { label: 'CRITICAL', value: criticalProducts.length, color: '#EA580C', bg: '#FFEDD5' },
+            { label: 'WARNING', value: warningProducts.length, color: '#F59E0B', bg: '#FEF3C7' },
+            { label: 'SAFE', value: safeProducts.length, color: '#10B981', bg: '#D1FAE5' }
         ];
 
         stats.forEach((stat, index) => {
             const x = 50 + (statWidth + statGap) * index;
 
-            doc.roundedRect(x, statsY, statWidth, statHeight, 8).fill(stat.bg);
-            doc.circle(x + 15, statsY + 20, 12).fill(stat.color);
-            doc.fontSize(14).fillColor('#FFFFFF').font('Helvetica-Bold').text(stat.icon, x + 10, statsY + 14, { width: 10, align: 'center' });
-            doc.fontSize(9).fillColor('#64748B').font('Helvetica').text(stat.label, x + 10, statsY + 45, { width: statWidth - 20 });
-            doc.fontSize(28).fillColor(stat.color).font('Helvetica-Bold').text(stat.value.toString(), x + 10, statsY + 58, { width: statWidth - 20 });
+            // Card background with border
+            doc.roundedRect(x, statsY, statWidth, statHeight, 8)
+               .fillAndStroke(stat.bg, stat.color);
+            
+            // Label
+            doc.fontSize(9)
+               .fillColor('#64748B')
+               .font('Helvetica')
+               .text(stat.label, x + 10, statsY + 15, { width: statWidth - 20, lineBreak: false });
+            
+            // Value
+            doc.fontSize(32)
+               .fillColor(stat.color)
+               .font('Helvetica-Bold')
+               .text(stat.value.toString(), x + 10, statsY + 32, { width: statWidth - 20, lineBreak: false });
         });
 
         // Set Y position after stats
@@ -110,18 +120,13 @@ const generateExpiryReport = async (req, res) => {
 
             const sectionStartY = doc.y;
 
-            // Section title
-            doc.fontSize(16)
+            // Section title - prevent wrapping with enough width
+            doc.fontSize(15)
                .fillColor('#0F172A')
                .font('Helvetica-Bold')
-               .text(title, 50, sectionStartY);
+               .text(title, 50, sectionStartY, { continued: false });
 
-            doc.fontSize(10)
-               .fillColor('#94A3B8')
-               .font('Helvetica')
-               .text(`${items.length} item${items.length > 1 ? 's' : ''}`, 200, sectionStartY + 2);
-
-            doc.y = sectionStartY + 30;
+            doc.y = sectionStartY + 28;
 
             items.forEach((product) => {
                 const rowHeight = 55;

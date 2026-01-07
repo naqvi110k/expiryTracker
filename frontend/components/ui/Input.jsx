@@ -1,8 +1,8 @@
 import React from 'react';
 
-const Input = ({ label, error, className = '', id, ...props }) => {
+const Input = ({ label, error, className = '', id, darkMode, ...props }) => {
   const inputId = id || props.name || Math.random().toString(36).substr(2, 9);
-  const isDarkMode = document.documentElement.classList.contains('dark');
+  const isDarkMode = darkMode !== undefined ? darkMode : document.documentElement.classList.contains('dark');
 
   return (
     <div className="w-full space-y-2">
