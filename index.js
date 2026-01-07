@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
+
 const cors = require('cors');
 const { startNotificationScheduler } = require('./services/notificationScheduler');
 
@@ -41,8 +41,7 @@ app.use('/api/users', userRoutes);
 // Product routes (protected)
 app.use('/api/products', productRoutes);
 
-// Notification routes (for manual testing)
-app.use('/api/notifications', notificationRoutes);
+
 
 // Start automated notification scheduler
 startNotificationScheduler();
