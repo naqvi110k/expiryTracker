@@ -21,7 +21,7 @@ const deleteProduct = async (req, res) => {
 
 // Controller function to create a new product
 const createProduct = async (req, res) => {
-    const { name, batchNumber, expiryDate, quantity, unit, category, description, image } = req.body;
+    const { name, batchNumber, manufacturingDate, expiryDate, quantity, unit, category, description, storageLocation, image } = req.body;
     const userId = req.user?.userId;
     console.log('Request body:', req.body);
 
@@ -44,11 +44,13 @@ const createProduct = async (req, res) => {
         const newProduct = new Product({
             name,
             batchNumber,
+            manufacturingDate: manufacturingDate || null,
             expiryDate,
             quantity,
             unit: unit || 'units',
             category: category || 'Uncategorized',
             description: description || '',
+            storageLocation: storageLocation || '',
             image: image || null,
             userId
         });
@@ -192,7 +194,7 @@ Status: ${statusMessage}
 // Controller function to update a product by ID
 const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { name, batchNumber, expiryDate, quantity, unit, category, description, image } = req.body;
+    const { name, batchNumber, manufacturingDate, expiryDate, quantity, unit, category, description, storageLocation, image } = req.body;
     const userId = req.user?.userId;
 
     // Basic validation
@@ -204,11 +206,13 @@ const updateProduct = async (req, res) => {
         const updateData = {
             name,
             batchNumber,
+            manufacturingDate: manufacturingDate || null,
             expiryDate,
             quantity,
             unit: unit || 'units',
             category: category || 'Uncategorized',
-            description: description || ''
+            description: description || '',
+            storageLocation: storageLocation || ''
         };
         
         if (image) {

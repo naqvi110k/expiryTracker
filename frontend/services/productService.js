@@ -68,3 +68,27 @@ export const sendExpiryAlert = async (id) => {
     throw error;
   }
 };
+
+export const generateExpiryReport = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/report`, {
+      headers: getAuthHeaders(),
+      responseType: 'blob', // Important for PDF download
+    });
+    
+    // Create a blob link to download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `expiry-report-${Date.now()}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error generating report:', error);
+    throw error;
+  }
+};

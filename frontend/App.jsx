@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { getProducts, updateProduct, deleteProduct, createProduct } from './services/productService';
+import { getProducts, updateProduct, deleteProduct, createProduct, generateExpiryReport } from './services/productService';
 import ProductCard from './components/ProductCard';
 import ProductDetails from './components/ProductDetails';
 import ProductForm from './components/ProductForm';
@@ -7,7 +7,7 @@ import Sheet from './components/ui/Sheet';
 import Dialog from './components/ui/Dialog';
 import Button from './components/ui/Button';
 import Input from './components/ui/Input';
-import { Search, Plus, Boxes, RefreshCw, LogOut, User as UserIcon, Sun, Moon } from 'lucide-react';
+import { Search, Plus, Boxes, RefreshCw, LogOut, User as UserIcon, Sun, Moon, FileText } from 'lucide-react';
 import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
@@ -218,6 +218,18 @@ const App = () => {
     }
   };
 
+  const handleGenerateReport = async () => {
+    setActionLoading(true);
+    try {
+      await generateExpiryReport();
+      showToast('success', 'Report downloaded successfully');
+    } catch (error) {
+      showToast('error', 'Failed to generate report');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // If not authenticated, show auth screens
   if (!authUser) {
     return authView === 'login' ? (
@@ -351,16 +363,16 @@ const App = () => {
         </div>
 
         {/* Controls */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+        <div className={`rounded-xl shadow-sm border p-6 mb-8 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1 group">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                <Search className={`h-5 w-5 transition-colors ${darkMode ? 'text-slate-500 group-focus-within:text-cyan-400' : 'text-slate-400 group-focus-within:text-blue-500'}`} />
               </div>
               <input
                 type="text"
                 placeholder="Search products by name, batch, or category..."
-                className="block w-full pl-12 pr-4 py-3 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm shadow-sm transition-all"
+                className={`block w-full pl-12 pr-4 py-3 border rounded-lg leading-5 placeholder-slate-400 focus:outline-none focus:ring-2 text-sm shadow-sm transition-all ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-100 focus:ring-cyan-400 focus:border-cyan-400' : 'bg-white border-slate-200 text-slate-900 focus:ring-blue-400 focus:border-blue-400'}`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -372,13 +384,24 @@ const App = () => {
                 onClick={fetchData}
                 title="Refresh Data"
                 size="md"
-                className="hover:bg-slate-50"
+                className={darkMode ? 'hover:bg-slate-700 border-slate-600 text-slate-300' : 'hover:bg-slate-50'}
               >
                 <RefreshCw
                   size={18}
-                  className={`mr-2 ${loading ? 'animate-spin' : ''}`}
+                  className={`mr-2 ${loading ? 'animate-spin' : ''} ${darkMode ? 'text-slate-300' : ''}`}
                 />
                 Refresh
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleGenerateReport}
+                title="Generate PDF Report"
+                size="md"
+                disabled={actionLoading || products.length === 0}
+                className={`whitespace-nowrap ${darkMode ? 'hover:bg-slate-700 border-slate-600 text-slate-300' : 'hover:bg-slate-50'}`}
+              >
+                <FileText size={18} className={`mr-2 ${darkMode ? 'text-slate-300' : ''}`} />
+                Report
               </Button>
               <Button
                 size="md"
@@ -394,11 +417,11 @@ const App = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12">
+          <div className={`rounded-xl shadow-sm border p-12 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
             <div className="flex flex-col items-center justify-center">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full border-4 border-slate-200 border-t-blue-500 animate-spin"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-blue-100 border-t-transparent animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+                <div className={`w-16 h-16 rounded-full border-4 animate-spin ${darkMode ? 'border-slate-700 border-t-cyan-500' : 'border-slate-200 border-t-blue-500'}`}></div>
+                <div className={`absolute inset-0 rounded-full border-4 border-t-transparent animate-spin ${darkMode ? 'border-cyan-900' : 'border-blue-100'}`} style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
               </div>
               <h3 className={`text-lg font-semibold mt-6 mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Loading Your Inventory</h3>
               <p className={`text-center animate-pulse ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -555,6 +578,7 @@ const App = () => {
             <Profile
               onClose={closeProfile}
               onProfileUpdate={handleProfileUpdate}
+              darkMode={darkMode}
             />
           </div>
         </div>

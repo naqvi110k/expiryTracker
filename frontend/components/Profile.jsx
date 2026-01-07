@@ -22,7 +22,7 @@ import {
   EyeOff
 } from 'lucide-react';
 
-const Profile = ({ onClose, onProfileUpdate }) => {
+const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -217,14 +217,14 @@ const Profile = ({ onClose, onProfileUpdate }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        <span className="ml-2 text-slate-600">Loading profile...</span>
+        <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${darkMode ? 'border-cyan-500' : 'border-blue-500'}`}></div>
+        <span className={`ml-2 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Loading profile...</span>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+    <div className={`max-w-4xl mx-auto rounded-xl shadow-lg border overflow-hidden ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-4 text-white">
         <div className="flex items-center justify-between">
@@ -264,14 +264,14 @@ const Profile = ({ onClose, onProfileUpdate }) => {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-slate-200">
+      <div className={`border-b ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
         <nav className="flex">
           <button
             onClick={() => setActiveTab('profile')}
             className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'profile'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
+                : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             Profile Information
@@ -280,8 +280,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
             onClick={() => setActiveTab('security')}
             className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'security'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
+                : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             Security
@@ -290,8 +290,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
             onClick={() => setActiveTab('stats')}
             className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'stats'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
+                : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
             Account Stats
@@ -304,7 +304,7 @@ const Profile = ({ onClose, onProfileUpdate }) => {
         {activeTab === 'profile' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Profile Information</h2>
+              <h2 className={`text-lg font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Profile Information</h2>
               {!isEditing && (
                 <Button
                   variant="outline"
@@ -374,8 +374,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
                     <User size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Username</p>
-                    <p className="font-medium text-slate-900">{profile.username}</p>
+                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Username</p>
+                    <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{profile.username}</p>
                   </div>
                 </div>
 
@@ -385,8 +385,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
                       <Mail size={20} className="text-emerald-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-slate-500">Email</p>
-                      <p className="font-medium text-slate-900">{profile.email}</p>
+                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Email</p>
+                      <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{profile.email}</p>
                     </div>
                   </div>
                 )}
@@ -396,8 +396,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
                     <Phone size={20} className="text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Phone Number</p>
-                    <p className="font-medium text-slate-900">{profile.phoneNumber}</p>
+                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Phone Number</p>
+                    <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{profile.phoneNumber}</p>
                   </div>
                 </div>
 
@@ -406,8 +406,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
                     <Calendar size={20} className="text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Member Since</p>
-                    <p className="font-medium text-slate-900">
+                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Member Since</p>
+                    <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                       {new Date(stats.accountCreated).toLocaleDateString()}
                     </p>
                   </div>
@@ -420,8 +420,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
         {activeTab === 'security' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">Change Password</h2>
-              <p className="text-slate-600 text-sm">Update your password to keep your account secure.</p>
+              <h2 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Change Password</h2>
+              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Update your password to keep your account secure.</p>
             </div>
 
             <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
@@ -493,8 +493,8 @@ const Profile = ({ onClose, onProfileUpdate }) => {
         {activeTab === 'stats' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">Account Statistics</h2>
-              <p className="text-slate-600 text-sm">Overview of your account activity.</p>
+              <h2 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Account Statistics</h2>
+              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Overview of your account activity.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
