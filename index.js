@@ -44,13 +44,17 @@ app.use('/api/products', productRoutes);
 
 
 // Start automated notification scheduler
-startNotificationScheduler();
+if (process.env.NODE_ENV !== 'production') {
+    startNotificationScheduler();
+}
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+// Start the server (only in local development)
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
 
 // Export for Vercel serverless
 module.exports = app;
