@@ -11,13 +11,15 @@ import { Search, Plus, Boxes, RefreshCw, LogOut, User as UserIcon, Sun, Moon, Fi
 import Login from './components/Login';
 import Register from './components/Register';
 import Profile from './components/Profile';
+import Landing from './components/Landing';
 import { getCurrentUser, logout as logoutUser } from './services/authService';
 import { getProfile, updateProfile, deleteAccount } from './services/userService';
 
 const App = () => {
   // Auth state
   const [authUser, setAuthUser] = useState(null);
-  const [authView, setAuthView] = useState('login'); // 'login' | 'register'
+  const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'landing'
+  const [showLanding, setShowLanding] = useState(true);
 
   // State
   const [products, setProducts] = useState([]);
@@ -230,8 +232,11 @@ const App = () => {
     }
   };
 
-  // If not authenticated, show auth screens
+  // If not authenticated, show auth screens or landing
   if (!authUser) {
+    if (showLanding) {
+      return <Landing onGetStarted={() => setShowLanding(false)} />;
+    }
     return authView === 'login' ? (
       <Login
         onSuccess={handleAuthSuccess}
