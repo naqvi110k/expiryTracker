@@ -1,70 +1,97 @@
-/* Custom Scrollbar Styling */
+/* Removed custom scrollbar styling to prevent unwanted scrollbars */
+
+/* Hide scrollbars completely */
+.hide-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Accordion transition classes */
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease-out, opacity 0.25s ease-out;
+}
+
+.accordion-content.open {
+  max-height: 500px; /* enough room for FAQ text */
+  opacity: 1;
+  transition: max-height 0.3s ease-in, opacity 0.3s ease-in;
+}
 
 /* Light mode scrollbar */
 .scrollbar-light {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f1f5f9;
+  -ms-overflow-style: auto;
+  scrollbar-width: auto;
 }
 
 .scrollbar-light::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.scrollbar-light::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 10px;
-}
-
-.scrollbar-light::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-  border: 2px solid #f1f5f9;
-}
-
-.scrollbar-light::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  width: auto;
+  height: auto;
 }
 
 /* Dark mode scrollbar */
 .scrollbar-dark {
-  scrollbar-width: thin;
-  scrollbar-color: #475569 #1e293b;
+  -ms-overflow-style: auto;
+  scrollbar-width: auto;
 }
 
 .scrollbar-dark::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.scrollbar-dark::-webkit-scrollbar-track {
-  background: #1e293b;
-  border-radius: 10px;
-}
-
-.scrollbar-dark::-webkit-scrollbar-thumb {
-  background: #475569;
-  border-radius: 10px;
-  border: 2px solid #1e293b;
-}
-
-.scrollbar-dark::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  width: auto;
+  height: auto;
 }
 
 /* Mobile Responsive Fixes */
 
 /* Prevent horizontal scroll */
-html, body {
+html,
+body {
   overflow-x: hidden;
   max-width: 100vw;
 }
 
 /* Mobile-friendly tap targets */
 @media (max-width: 768px) {
-  button, a, [role="button"] {
+
+  button,
+  a,
+  [role="button"] {
     min-height: 44px;
     min-width: 44px;
+  }
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 640px) {
+
+  /* Larger base font for better readability */
+  body {
+    font-size: 16px;
+  }
+
+  /* Better spacing for small screens */
+  .mobile-padding {
+    padding: 0.75rem;
+  }
+
+  /* Ensure touch targets are adequate */
+  button,
+  a[role="button"],
+  .btn {
+    min-height: 44px;
+    padding: 0.625rem 1rem;
+  }
+
+  /* Better card spacing on mobile */
+  .mobile-card-spacing {
+    margin-bottom: 1rem;
   }
 }
 
@@ -82,15 +109,16 @@ html, body {
   .xs\:block {
     display: block !important;
   }
-  
+
   .xs\:hidden {
     display: none !important;
   }
-  
+
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
+    line-clamp: 2;
     overflow: hidden;
   }
 }
@@ -101,6 +129,7 @@ html, body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -111,6 +140,7 @@ html, body {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -121,6 +151,7 @@ html, body {
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -174,5 +205,56 @@ html {
 @media (max-width: 768px) {
   .grid-responsive {
     grid-template-columns: 1fr !important;
+  }
+}
+/* ── SW Update Toast (Commit 8) ─────────────────────────────────────────── */
+@keyframes swToastSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.sw-update-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.1rem;
+  background: #1e1b4b;
+  color: #e0e7ff;
+  border-radius: 999px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  animation: swToastSlideIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(139,92,246,0.4);
+}
+.sw-update-toast__icon { font-size: 1rem; flex-shrink: 0; }
+.sw-update-toast__text { white-space: nowrap; }
+.sw-update-toast__btn {
+  margin-left: 0.4rem;
+  padding: 0.35rem 0.9rem;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+  min-height: auto;
+  min-width: auto;
+}
+.sw-update-toast__btn:hover { opacity: 0.9; transform: scale(1.04); }
+
+@media (max-width: 640px) {
+  .sw-update-toast {
+    bottom: 1rem; right: 1rem; left: 1rem;
+    border-radius: 1rem;
+    justify-content: space-between;
   }
 }
