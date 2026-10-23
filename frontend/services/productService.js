@@ -69,6 +69,20 @@ export const sendExpiryAlert = async (id) => {
   }
 };
 
+export const sendTelegramAlert = async (id) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/telegram-alert`,
+      { productId: id },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error sending Telegram alert:', error);
+    throw error;
+  }
+};
+
 export const generateExpiryReport = async () => {
   try {
     const response = await axios.get(`${API_URL}/report`, {
@@ -90,5 +104,50 @@ export const generateExpiryReport = async () => {
   } catch (error) {
     console.error('Error generating report:', error);
     throw error;
+  }
+};
+
+export const bulkImportProducts = async (file, onProgress) => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await axios.post(`${API_URL}/bulk-import`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type header, let browser set it with boundary
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error importing products:', error);
+    throw error;
+  }
+};
+
+export const extractProductDetails = async (base64Image) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/extract`,
+      { image: base64Image },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error extracting product details:', error);
+    const message = error.response?.data?.message || error.message || 'Failed to extract product details from image';
+    throw new Error(message);
   }
 };
