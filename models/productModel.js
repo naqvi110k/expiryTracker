@@ -13,6 +13,7 @@ const productSchema = new Schema({
     description: { type: String, default: '' },
     storageLocation: { type: String, default: '' },
     image: { type: String, default: null }, // Store base64 image data
+    barcode: { type: String, default: null }, // Store barcode/QR code value
     userId: { type: Schema.Types.ObjectId, ref: 'User', default: null } // Owner of this product
 });
 

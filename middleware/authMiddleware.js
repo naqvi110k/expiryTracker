@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const twilio = require('twilio');
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -25,6 +26,9 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-module.exports = { authenticateToken };
+// Trusting twilio signature using twilio's official validation middleware
+const validateTwilioWebhook = twilio.webhook({ validate: true });
+
+module.exports = { authenticateToken, validateTwilioWebhook };
 
 

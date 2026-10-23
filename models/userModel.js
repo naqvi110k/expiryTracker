@@ -6,6 +6,12 @@ const userSchema = new mongoose.Schema(
     email: { type: String, unique: true, sparse: true, trim: true },
     password: { type: String, required: true },
     phoneNumber: { type: String, required: true, unique: true, trim: true },
+    telegramUserId: { type: String, trim: true },
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String },
+    emailVerificationExpires: { type: Date },
+    passwordResetToken: { type: String },
+    passwordResetExpires: { type: Date },
   },
   { timestamps: true }
 );

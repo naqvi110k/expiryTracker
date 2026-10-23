@@ -1,13 +1,19 @@
 const cron = require('node-cron');
+const mongoose = require('mongoose');
 const Product = require('../models/productModel');
 const User = require('../models/userModel');
-const { sendWhatsApp } = require('../config/twilio');
+const { sendWhatsApp, sendTelegramMessage } = require('../config/twilio');
+const connectDB = require('../config/db');
 
 // Function to send expiry alerts to all users
 const sendDailyExpiryAlerts = async () => {
     console.log('🔔 Running daily expiry alert check...');
     
     try {
+        // Ensure database connection is established
+        if (mongoose.connection.readyState !== 1) {
+            await connectDB();
+        }
         // Get all users
         const users = await User.find({});
         
@@ -97,9 +103,17 @@ const sendDailyExpiryAlerts = async () => {
             // Send WhatsApp message
             if (user.phoneNumber) {
                 await sendWhatsApp(message, user.phoneNumber);
-                console.log(`✓ Alert sent to ${user.username} (${user.phoneNumber})`);
+                console.log(`✓ WhatsApp alert sent to ${user.username} (${user.phoneNumber})`);
             } else {
                 console.log(`⚠ No phone number for user: ${user.username}`);
+            }
+            
+            // Send Telegram message if user has provided Telegram user ID
+            if (user.telegramUserId) {
+                await sendTelegramMessage(message, user.telegramUserId);
+                console.log(`✓ Telegram alert sent to ${user.username} (ID: ${user.telegramUserId})`);
+            } else {
+                console.log(`⚠ No Telegram user ID for user: ${user.username}`);
             }
             
             // Add delay between messages to avoid rate limiting
@@ -114,6 +128,7 @@ const sendDailyExpiryAlerts = async () => {
 };
 
 // Schedule job to run every day at 9:00 AM
+// Note: In serverless environments like Vercel, use external scheduling services instead
 const startNotificationScheduler = () => {
     // Cron format: minute hour day month weekday
     // '0 9 * * *' means: At 9:00 AM every day
@@ -125,6 +140,8 @@ const startNotificationScheduler = () => {
     });
     
     console.log('✅ Notification scheduler started - Daily alerts at 9:00 AM');
+    console.log('⚠️  Note: In serverless environments, scheduled tasks may not work reliably');
+    console.log('💡 Consider using external scheduling services for production deployments');
 };
 
 // Manual trigger function for testing
@@ -135,5 +152,6 @@ const triggerManualAlert = async () => {
 
 module.exports = {
     startNotificationScheduler,
-    triggerManualAlert
+    triggerManualAlert,
+    sendDailyExpiryAlerts
 };
