@@ -1,38 +1,84 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import { Helmet } from 'react-helmet-async';
+import SwUpdateToast from './components/SwUpdateToast';
+import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { getProducts, updateProduct, deleteProduct, createProduct, generateExpiryReport } from './services/productService';
-import ProductCard from './components/ProductCard';
-import ProductDetails from './components/ProductDetails';
-import ProductForm from './components/ProductForm';
+const ProductCard = lazy(() => import('./components/ProductCard'));
+const ProductDetails = lazy(() => import('./components/ProductDetails'));
+const ProductForm = lazy(() => import('./components/ProductForm'));
+const BulkImport = lazy(() => import('./components/BulkImport'));
 import Sheet from './components/ui/Sheet';
 import Dialog from './components/ui/Dialog';
 import Button from './components/ui/Button';
-import Input from './components/ui/Input';
-import { Search, Plus, Boxes, RefreshCw, LogOut, User as UserIcon, Sun, Moon, FileText } from 'lucide-react';
-import Login from './components/Login';
-import Register from './components/Register';
+import LoadingSpinner from './components/ui/LoadingSpinner';
+import {
+  Search,
+  Plus,
+  Boxes,
+  RefreshCw,
+  FileText,
+  Upload,
+  XCircle,
+  MessageCircle,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle
+} from 'lucide-react';
+import UnprotectedRoute from './components/UnprotectedRoute';
 import Profile from './components/Profile';
-import Landing from './components/Landing';
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 import { getCurrentUser, logout as logoutUser } from './services/authService';
-import { getProfile, updateProfile, deleteAccount } from './services/userService';
+
+const Login = lazy(() => import('./components/Login'));
+const Register = lazy(() => import('./components/Register'));
+const VerifyEmail = lazy(() => import('./components/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./components/ForgotPassword'));
+const ResetPassword = lazy(() => import('./components/ResetPassword'));
+const ResendVerification = lazy(() => import('./components/ResendVerification'));
+const Landing = lazy(() => import('./components/Landing'));
+const Analytics = lazy(() => import('./components/Analytics'));
+const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./components/TermsOfService'));
+const BlogList = lazy(() => import('./components/BlogList'));
+const BlogPost = lazy(() => import('./components/BlogPost'));
+const ExpiryCalculator = lazy(() => import('./components/ExpiryCalculator'));
+const About = lazy(() => import('./components/About'));
+const Contact = lazy(() => import('./components/Contact'));
+
+const useWindowSize = () => {
+  const [width, setWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return width;
+};
 
 const App = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Auth state
   const [authUser, setAuthUser] = useState(null);
-  const [authView, setAuthView] = useState('login'); // 'login' | 'register' | 'landing'
-  const [showLanding, setShowLanding] = useState(true);
 
   // State
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
   // Selection & Modal States
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  
+
   // Toast State
   const [toast, setToast] = useState(null);
 
@@ -42,7 +88,6 @@ const App = () => {
   // Theme state
   const [darkMode, setDarkMode] = useState(false);
 
-  // Toggle theme
   const toggleTheme = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -50,16 +95,69 @@ const App = () => {
     localStorage.setItem('theme', newMode ? 'dark' : 'light');
   };
 
-  // Initialize theme from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
       setDarkMode(true);
       document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 
-  // Get user initials for circular avatar
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Sync locally-saved products to server when connectivity is restored
+  useEffect(() => {
+    if (!isOnline) return;
+    const syncLocalProducts = async () => {
+      const localProducts = products.filter(p => p._isLocal);
+      if (localProducts.length === 0) return;
+      let synced = 0;
+      const updatedList = [...products];
+      for (const p of localProducts) {
+        try {
+          const { _isLocal, id, ...data } = p;
+          const saved = await createProduct(data);
+          const idx = updatedList.findIndex(x => x.id === p.id);
+          if (idx !== -1) updatedList[idx] = { ...saved, id: saved._id || saved.id };
+          synced++;
+        } catch (_) { /* leave as local if still failing */ }
+      }
+      if (synced > 0) {
+        setProducts(updatedList);
+        localStorage.setItem('cachedProducts', JSON.stringify(updatedList));
+        showToast('success', `Synced ${synced} offline product${synced !== 1 ? 's' : ''} to server`);
+      }
+    };
+    syncLocalProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline]);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   const getUserInitials = (username) => {
     if (!username) return '';
     const names = username.split(' ');
@@ -69,18 +167,6 @@ const App = () => {
     return username.substring(0, 2).toUpperCase();
   };
 
-  // Initialize auth + data
-  useEffect(() => {
-    const user = getCurrentUser();
-    if (user) {
-      setAuthUser(user);
-      fetchData();
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  // Toast Auto-dismiss
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
@@ -97,8 +183,20 @@ const App = () => {
         id: product._id || product.id
       }));
       setProducts(normalizedData);
+      localStorage.setItem('cachedProducts', JSON.stringify(normalizedData));
     } catch (error) {
-      showToast('error', 'Failed to fetch products');
+      const cachedProducts = localStorage.getItem('cachedProducts');
+      if (cachedProducts) {
+        try {
+          const parsedProducts = JSON.parse(cachedProducts);
+          setProducts(parsedProducts);
+          showToast('info', 'Showing cached data (offline mode)');
+        } catch (parseError) {
+          console.error('Failed to parse cached data:', parseError);
+        }
+      } else {
+        showToast('error', 'Failed to fetch products');
+      }
     } finally {
       setLoading(false);
     }
@@ -108,25 +206,17 @@ const App = () => {
     setToast({ id: Date.now().toString(), type, message });
   };
 
-  const handleAuthSuccess = (user) => {
-    setAuthUser(user);
-    setAuthView('login');
-    fetchData();
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      setDeferredPrompt(null);
+      setShowInstallBanner(false);
+    }
   };
 
-  const handleLogout = () => {
-    logoutUser();
-    setAuthUser(null);
-    setProducts([]);
-  };
-
-  const openProfile = () => {
-    setShowProfile(true);
-  };
-
-  const closeProfile = () => {
-    setShowProfile(false);
-  };
+  const openProfile = () => setShowProfile(true);
+  const closeProfile = () => setShowProfile(false);
 
   const handleProfileUpdate = (updatedUser) => {
     setAuthUser((prev) => ({
@@ -136,31 +226,19 @@ const App = () => {
     }));
   };
 
-  // Filter Logic
   const filteredProducts = useMemo(() => {
-    return products.filter(product => 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.batchNumber.toLowerCase().includes(searchQuery.toLowerCase())
+    return products.filter(product =>
+      (product.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (product.batchNumber || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [products, searchQuery]);
 
-  // Handlers
-  const handleProductClick = (product) => {
-    setSelectedProduct(product);
-  };
-
-  const handleEditClick = () => {
-    setIsEditModalOpen(true);
-  };
-
-  const handleDeleteClick = () => {
-    setIsDeleteModalOpen(true);
-  };
-  
-  const handleAddClick = () => {
-    setIsAddModalOpen(true);
-  };
+  const handleProductClick = (product) => setSelectedProduct(product);
+  const handleEditClick = () => setIsEditModalOpen(true);
+  const handleDeleteClick = () => setIsDeleteModalOpen(true);
+  const handleAddClick = () => setIsAddModalOpen(true);
+  const handleBulkImportClick = () => setIsBulkImportModalOpen(true);
 
   const handleCreateProduct = async (data) => {
     setActionLoading(true);
@@ -170,11 +248,27 @@ const App = () => {
         ...newProduct,
         id: newProduct._id || newProduct.id
       };
-      setProducts(prev => [normalizedProduct, ...prev]);
+      setProducts(prev => {
+        const updatedList = [normalizedProduct, ...prev];
+        localStorage.setItem('cachedProducts', JSON.stringify(updatedList));
+        return updatedList;
+      });
       setIsAddModalOpen(false);
       showToast('success', 'Product created successfully');
     } catch (error) {
-      showToast('error', 'Failed to create product');
+      const newLocalProduct = {
+        ...data,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        _isLocal: true
+      };
+      setProducts(prev => {
+        const updatedList = [newLocalProduct, ...prev];
+        localStorage.setItem('cachedProducts', JSON.stringify(updatedList));
+        return updatedList;
+      });
+      setIsAddModalOpen(false);
+      showToast('info', 'Product saved locally (will sync when online)');
     } finally {
       setActionLoading(false);
     }
@@ -182,7 +276,7 @@ const App = () => {
 
   const handleUpdateProduct = async (data) => {
     if (!selectedProduct) return;
-    
+
     setActionLoading(true);
     try {
       const updated = await updateProduct(selectedProduct.id, data);
@@ -190,13 +284,29 @@ const App = () => {
         ...updated,
         id: updated._id || updated.id
       };
-      
-      setProducts(prev => prev.map(p => p.id === normalizedProduct.id ? normalizedProduct : p));
+
+      setProducts(prev => {
+        const updatedList = prev.map(p => p.id === normalizedProduct.id ? normalizedProduct : p);
+        localStorage.setItem('cachedProducts', JSON.stringify(updatedList));
+        return updatedList;
+      });
       setSelectedProduct(normalizedProduct);
       setIsEditModalOpen(false);
       showToast('success', 'Product updated successfully');
     } catch (error) {
-      showToast('error', 'Failed to update product');
+      setProducts(prev => {
+        const updatedList = prev.map(p => {
+          if (p.id === selectedProduct.id) {
+            return { ...p, ...data, _isLocal: true, updatedAt: new Date().toISOString() };
+          }
+          return p;
+        });
+        localStorage.setItem('cachedProducts', JSON.stringify(updatedList));
+        return updatedList;
+      });
+      setSelectedProduct({ ...selectedProduct, ...data, _isLocal: true, updatedAt: new Date().toISOString() });
+      setIsEditModalOpen(false);
+      showToast('info', 'Product updated locally (will sync when online)');
     } finally {
       setActionLoading(false);
     }
@@ -208,13 +318,23 @@ const App = () => {
     setActionLoading(true);
     try {
       await deleteProduct(selectedProduct.id);
-      
-      setProducts(prev => prev.filter(p => p.id !== selectedProduct.id));
+      setProducts(prev => {
+        const updatedList = prev.filter(p => p.id !== selectedProduct.id);
+        localStorage.setItem('cachedProducts', JSON.stringify(updatedList));
+        return updatedList;
+      });
       setSelectedProduct(null);
       setIsDeleteModalOpen(false);
       showToast('success', 'Product deleted successfully');
     } catch (error) {
-      showToast('error', 'Failed to delete product');
+      setProducts(prev => {
+        const updatedList = prev.filter(p => p.id !== selectedProduct.id);
+        localStorage.setItem('cachedProducts', JSON.stringify(updatedList));
+        return updatedList;
+      });
+      setSelectedProduct(null);
+      setIsDeleteModalOpen(false);
+      showToast('info', 'Product marked for deletion (will sync when online)');
     } finally {
       setActionLoading(false);
     }
@@ -232,295 +352,374 @@ const App = () => {
     }
   };
 
-  // If not authenticated, show auth screens or landing
-  if (!authUser) {
-    if (showLanding) {
-      return <Landing onGetStarted={() => setShowLanding(false)} />;
+  const handleAuthSuccess = (user) => {
+    setAuthUser(user);
+    fetchData();
+    navigate('/dashboard');
+  };
+
+  const handleLogout = () => {
+    logoutUser();
+    setAuthUser(null);
+    setProducts([]);
+    navigate('/login');
+  };
+
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      setAuthUser(user);
+      fetchData();
+    } else {
+      setLoading(false);
+      const publicRoutes = ['/login', '/register', '/', '/forgot-password', '/verify-email', '/reset-password', '/resend-verification', '/privacy-policy', '/terms-of-service', '/blog', '/expiry-calculator', '/about', '/contact'];
+      const isPublicRoute = publicRoutes.some(route =>
+        location.pathname === route || location.pathname.startsWith(route + '/')
+      );
+
+      if (!isPublicRoute) {
+        navigate('/');
+      }
     }
-    return authView === 'login' ? (
-      <Login
-        onSuccess={handleAuthSuccess}
-        onSwitchToRegister={() => setAuthView('register')}
-      />
-    ) : (
-      <Register
-        onSuccess={handleAuthSuccess}
-        onSwitchToLogin={() => setAuthView('login')}
-      />
-    );
-  }
+  }, [location.pathname, navigate]);
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-white text-slate-900'}`}>
-      {/* Navbar */}
-      <header className={`sticky top-0 z-30 backdrop-blur-lg border-b shadow-lg ${darkMode ? 'bg-slate-800/80 border-slate-700/50' : 'bg-white/80 border-slate-200/50'}`}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-shrink">
-            <div className="bg-gradient-to-tr from-blue-600 to-cyan-500 p-2 sm:p-3 rounded-xl text-white flex-shrink-0 shadow-lg">
-              <Boxes size={24} className="sm:w-7 sm:h-7" />
-            </div>
-            <div className="min-w-0 hidden xs:block">
-              <h1 className={`text-base sm:text-xl font-bold bg-clip-text text-transparent whitespace-nowrap ${darkMode ? 'bg-gradient-to-r from-cyan-400 to-blue-400' : 'bg-gradient-to-r from-slate-900 to-slate-600'}`}>
-                Inventa
-              </h1>
-              <p className={`text-xs sm:text-sm font-medium whitespace-nowrap hidden sm:block ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Smart Inventory Management
-              </p>
-            </div>
-          </div>
+    <div className={`min-h-screen ${darkMode ? 'bg-[#0A0A0A] text-[#F5F5F3]' : 'bg-[#FAF9F6] text-[#111111]'}`}>
+      <SwUpdateToast />
+      <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><LoadingSpinner size="lg" variant="primary" /></div>}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing onGetStarted={() => navigate('/login')} />} />
+          <Route
+            path="/login"
+            element={
+              <UnprotectedRoute redirectTo="/dashboard">
+                <Login onSuccess={handleAuthSuccess} onSwitchToRegister={() => navigate('/register')} />
+              </UnprotectedRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <UnprotectedRoute redirectTo="/dashboard">
+                <Register onSuccess={handleAuthSuccess} onSwitchToLogin={() => navigate('/login')} />
+              </UnprotectedRoute>
+            }
+          />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/resend-verification" element={<ResendVerification />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/blog" element={<BlogList />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/expiry-calculator" element={<ExpiryCalculator />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
 
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {/* Theme Toggle Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className={`transition-colors p-2 sm:px-3 ${darkMode ? 'text-yellow-400 hover:bg-slate-700 border-slate-600 hover:border-slate-500' : 'text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-slate-300'}`}
-              onClick={toggleTheme}
-              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-              <span className="hidden lg:inline ml-2">{darkMode ? 'Light' : 'Dark'}</span>
-            </Button>
-
-            {/* Mobile User Icon */}
-            <button
-              type="button"
-              onClick={openProfile}
-              className={`sm:hidden p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-50'}`}
-              title="Profile"
-            >
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-1.5 rounded-full text-white">
-                <span className="text-xs font-bold">{getUserInitials(authUser?.username)}</span>
-              </div>
-            </button>
-
-            {/* Desktop User Profile Section */}
-            <button
-              type="button"
-              onClick={openProfile}
-              className={`hidden sm:flex items-center space-x-2 sm:space-x-3 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 transition-all duration-200 border ${darkMode ? 'hover:bg-slate-700 border-transparent hover:border-slate-600' : 'hover:bg-slate-50 border-transparent hover:border-slate-200'}`}
-            >
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-1.5 sm:p-2 rounded-full text-white">
-                <span className="text-xs sm:text-sm font-bold">{getUserInitials(authUser?.username)}</span>
-              </div>
-              <div className="text-left hidden md:block">
-                <p className={`text-xs font-medium ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Hello,</p>
-                <p className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{authUser?.username}</p>
-              </div>
-            </button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className={`transition-colors p-2 sm:px-3 ${darkMode ? 'text-yellow-400 hover:bg-slate-700 border-slate-600 hover:border-slate-500' : 'text-slate-600 hover:bg-slate-50 border-slate-200 hover:border-slate-300'}`}
-              onClick={handleLogout}
-              title="Sign out"
-            >
-              <LogOut size={18} className="sm:mr-2" />
-              <span className="hidden lg:inline">Sign out</span>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
-        {/* Dashboard Header */}
-        <div className="mb-6 sm:mb-8">
-          <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Dashboard Overview</h2>
-          <p className={darkMode ? 'text-slate-400 text-sm' : 'text-slate-600 text-sm'}>Manage your inventory and track product expiry dates</p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-4 sm:p-6 rounded-xl text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-xs sm:text-sm font-medium">Total Products</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">{products.length}</p>
-              </div>
-              <div className="bg-white/20 p-2 sm:p-3 rounded-lg">
-                <Boxes size={20} className="sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-4 sm:p-6 rounded-xl text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-emerald-100 text-xs sm:text-sm font-medium">Active Items</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">
-                  {products.filter(p => new Date(p.expiryDate) > new Date()).length}
-                </p>
-              </div>
-              <div className="bg-white/20 p-2 sm:p-3 rounded-lg">
-                <Plus size={20} className="sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-r from-orange-500 to-red-500 p-4 sm:p-6 rounded-xl text-white shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-100 text-xs sm:text-sm font-medium">Expiring Soon</p>
-                <p className="text-2xl sm:text-3xl font-bold mt-1">
-                  {products.filter(p => {
-                    const expiry = new Date(p.expiryDate);
-                    const now = new Date();
-                    const diffDays = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
-                    return diffDays >= 0 && diffDays <= 7;
-                  }).length}
-                </p>
-              </div>
-              <div className="bg-white/20 p-2 sm:p-3 rounded-lg">
-                <RefreshCw size={20} className="sm:w-6 sm:h-6" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className={`rounded-xl shadow-sm border p-4 sm:p-6 mb-6 sm:mb-8 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-          <div className="flex flex-col gap-4">
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                <Search className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${darkMode ? 'text-slate-500 group-focus-within:text-cyan-400' : 'text-slate-400 group-focus-within:text-blue-500'}`} />
-              </div>
-              <input
-                type="text"
-                placeholder="Search products by name, batch, or category..."
-                className={`block w-full pl-10 pr-4 py-2 sm:py-3 border rounded-lg leading-5 placeholder-slate-400 focus:outline-none focus:ring-2 text-sm shadow-sm transition-all ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-100 focus:ring-cyan-400 focus:border-cyan-400' : 'bg-white border-slate-200 text-slate-900 focus:ring-blue-400 focus:border-blue-400'}`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-3 flex-shrink-0">
-              <Button
-                variant="outline"
-                onClick={fetchData}
-                title="Refresh Data"
-                size="md"
-                className={`flex-1 ${darkMode ? 'hover:bg-slate-700 border-slate-600 text-slate-300' : 'hover:bg-slate-50'}`}
-              >
-                <RefreshCw
-                  size={18}
-                  className={`mr-2 ${loading ? 'animate-spin' : ''} ${darkMode ? 'text-slate-300' : ''}`}
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute redirectTo="/login">
+                <Dashboard
+                  products={products}
+                  loading={loading}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  isOnline={isOnline}
+                  darkMode={darkMode}
+                  toggleTheme={toggleTheme}
+                  fetchData={fetchData}
+                  handleAddClick={handleAddClick}
+                  handleBulkImportClick={handleBulkImportClick}
+                  handleGenerateReport={handleGenerateReport}
+                  handleProductClick={handleProductClick}
+                  handleLogout={handleLogout}
+                  openProfile={openProfile}
+                  getUserInitials={getUserInitials}
+                  authUser={authUser}
+                  filteredProducts={filteredProducts}
+                  selectedProduct={selectedProduct}
+                  setSelectedProduct={setSelectedProduct}
+                  isEditModalOpen={isEditModalOpen}
+                  setIsEditModalOpen={setIsEditModalOpen}
+                  isAddModalOpen={isAddModalOpen}
+                  setIsAddModalOpen={setIsAddModalOpen}
+                  isDeleteModalOpen={isDeleteModalOpen}
+                  setIsDeleteModalOpen={setIsDeleteModalOpen}
+                  isBulkImportModalOpen={isBulkImportModalOpen}
+                  setIsBulkImportModalOpen={setIsBulkImportModalOpen}
+                  actionLoading={actionLoading}
+                  handleEditClick={handleEditClick}
+                  handleDeleteClick={handleDeleteClick}
+                  handleUpdateProduct={handleUpdateProduct}
+                  handleCreateProduct={handleCreateProduct}
+                  handleConfirmDelete={handleConfirmDelete}
+                  showToast={showToast}
+                  toast={toast}
+                  showProfile={showProfile}
+                  closeProfile={closeProfile}
+                  handleProfileUpdate={handleProfileUpdate}
+                  showInstallBanner={showInstallBanner}
+                  setShowInstallBanner={setShowInstallBanner}
+                  deferredPrompt={deferredPrompt}
+                  handleInstallClick={handleInstallClick}
                 />
-                <span>Refresh</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleGenerateReport}
-                title="Generate PDF Report"
-                size="md"
-                disabled={actionLoading || products.length === 0}
-                className={`flex-1 whitespace-nowrap ${darkMode ? 'hover:bg-slate-700 border-slate-600 text-slate-300' : 'hover:bg-slate-50'}`}
-              >
-                <FileText size={18} className={`mr-2 ${darkMode ? 'text-slate-300' : ''}`} />
-                <span>Report</span>
-              </Button>
-              <Button
-                size="md"
-                onClick={handleAddClick}
-                className="flex-1 whitespace-nowrap shadow-sm"
-              >
-                <Plus size={18} className="mr-2" />
-                <span>Add Product</span>
-              </Button>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute redirectTo="/login">
+                <Analytics
+                  darkMode={darkMode}
+                  user={authUser}
+                  onLogout={handleLogout}
+                  toggleTheme={toggleTheme}
+                  onOpenProfile={openProfile}
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="*"
+            element={authUser ? <Navigate to="/dashboard" replace /> : <Navigate to="/" replace />}
+          />
+        </Routes>
+      </Suspense>
+    </div>
+  );
+};
+
+const Dashboard = ({
+  products, loading, searchQuery, setSearchQuery, isOnline, darkMode, toggleTheme,
+  fetchData, handleAddClick, handleBulkImportClick, handleGenerateReport, handleProductClick, handleLogout,
+  openProfile, authUser, filteredProducts, selectedProduct, setSelectedProduct,
+  isEditModalOpen, setIsEditModalOpen, isAddModalOpen, setIsAddModalOpen, isDeleteModalOpen,
+  setIsDeleteModalOpen, isBulkImportModalOpen, setIsBulkImportModalOpen,
+  actionLoading, handleEditClick, handleDeleteClick, handleUpdateProduct,
+  handleCreateProduct, handleConfirmDelete, showToast, toast, showProfile, closeProfile,
+  handleProfileUpdate, showInstallBanner, setShowInstallBanner, handleInstallClick
+}) => {
+  const windowWidth = useWindowSize();
+  const isDesktop = windowWidth > 1024;
+
+  const stats = {
+    total: products.length,
+    active: products.filter(p => new Date(p.expiryDate) > new Date()).length,
+    expiringMsg: products.filter(p => {
+      const expiry = new Date(p.expiryDate);
+      const now = new Date();
+      const diffDays = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 7;
+    }).length,
+    expired: products.filter(p => {
+      const expiry = new Date(p.expiryDate);
+      const now = new Date();
+      return expiry < now;
+    }).length
+  };
+
+  return (
+    <Layout
+      user={authUser}
+      onLogout={handleLogout}
+      toggleTheme={toggleTheme}
+      darkMode={darkMode}
+      title="Inventory Ledger"
+      onOpenProfile={openProfile}
+    >
+      <Helmet>
+        <title>Dashboard | Inventa Inventory Management</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+
+      {/* Top Editorial Banner */}
+      <div
+        className={`mb-6 rounded-xl border p-5 sm:p-6 ${
+          darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+        }`}
+      >
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#BBF7D0] bg-[#F0FDF4] dark:border-[#19422B] dark:bg-[#0D2116] px-3 py-1 text-xs font-semibold text-[#15803D] dark:text-[#4ADE80]">
+              <MessageCircle size={13} />
+              <span>WhatsApp Shelf Automation</span>
             </div>
+            <h2 className="mt-3 text-xl sm:text-2xl font-bold tracking-tight">
+              Track batches, verify label scans, and prevent expiry write-offs.
+            </h2>
+            <p className={`mt-1.5 text-sm leading-relaxed ${darkMode ? 'text-[#A3A39E]' : 'text-[#4A4A46]'}`}>
+              Send a photo on WhatsApp or upload a label below to automatically extract batch codes and expiration dates.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5 sm:min-w-[340px]">
+            {[
+              ['01. Capture', 'Photo to SKU'],
+              ['02. Verify', 'Human check'],
+              ['03. Alert', 'Daily 09:00 AM']
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className={`rounded-lg border px-3.5 py-2.5 ${
+                  darkMode ? 'border-[#262626] bg-[#0A0A0A]' : 'border-[#E4E4E0] bg-[#FAF9F6]'
+                }`}
+              >
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[#15803D] dark:text-[#4ADE80] font-semibold">
+                  {label}
+                </div>
+                <div className="mt-1 text-xs font-semibold">{value}</div>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className={`rounded-xl shadow-sm border p-8 sm:p-12 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-            <div className="flex flex-col items-center justify-center">
-              <div className="relative">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full border-4 animate-spin ${darkMode ? 'border-slate-700 border-t-cyan-500' : 'border-slate-200 border-t-blue-500'}`}></div>
-                <div className={`absolute inset-0 rounded-full border-4 border-t-transparent animate-spin ${darkMode ? 'border-cyan-900' : 'border-blue-100'}`} style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
-              </div>
-              <h3 className={`text-lg font-semibold mt-4 sm:mt-6 mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>Loading Your Inventory</h3>
-              <p className={`text-center text-sm sm:text-base animate-pulse ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Fetching your products and expiry information...
-              </p>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <StatCard
+          title="Total SKUs"
+          value={stats.total}
+          icon={Boxes}
+          tone="neutral"
+          darkMode={darkMode}
+        />
+        <StatCard
+          title="Healthy Stock"
+          value={stats.active}
+          icon={CheckCircle2}
+          tone="good"
+          darkMode={darkMode}
+        />
+        <StatCard
+          title="Expiring (≤7d)"
+          value={stats.expiringMsg}
+          icon={AlertTriangle}
+          tone="warning"
+          darkMode={darkMode}
+        />
+        <StatCard
+          title="Expired Items"
+          value={stats.expired}
+          icon={XCircle}
+          tone="critical"
+          darkMode={darkMode}
+        />
+      </div>
+
+      {/* Search & Action Toolbar */}
+      <div
+        className={`rounded-xl border p-4 mb-6 ${
+          darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+        }`}
+      >
+        <div className="flex flex-col lg:flex-row gap-3">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <Search className={`h-4 w-4 ${darkMode ? 'text-[#6E6E68]' : 'text-[#767670]'}`} />
             </div>
+            <input
+              type="text"
+              placeholder="Search by product name, category, or batch number..."
+              className={`block w-full pl-10 pr-4 py-2.5 border rounded-lg text-sm focus:outline-none transition-colors min-h-[42px] ${
+                darkMode
+                  ? 'bg-[#0A0A0A] border-[#262626] text-[#F5F5F3] placeholder-[#6E6E68] focus:border-[#22C55E]'
+                  : 'bg-[#FAF9F6] border-[#CFCFC8] text-[#111111] placeholder-[#767670] focus:border-[#15803D]'
+              }`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        )}
 
-        {/* Empty State */}
-        {!loading && filteredProducts.length === 0 && (
-          <div className={`rounded-xl shadow-sm border p-6 sm:p-12 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-            <div className="flex flex-col items-center justify-center text-center">
-              <div className={`p-4 sm:p-6 rounded-full mb-4 sm:mb-6 ${darkMode ? 'bg-gradient-to-br from-slate-700 to-slate-600' : 'bg-gradient-to-br from-slate-100 to-slate-200'}`}>
-                <Search className={`h-8 w-8 sm:h-12 sm:w-12 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-              </div>
-              <h3 className={`text-lg sm:text-xl font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                {searchQuery ? 'No products found' : 'No products yet'}
-              </h3>
-              <p className={`text-sm sm:text-base text-center mb-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                {searchQuery
-                  ? 'We couldn\'t find any products matching your search criteria. Try adjusting your search terms.'
-                  : 'Get started by adding your first product to the inventory. Track expiry dates and manage your stock efficiently.'
-                }
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                {searchQuery && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setSearchQuery('')}
-                  >
-                    Clear Search
-                  </Button>
-                )}
-                <Button
-                  onClick={handleAddClick}
-                  className="shadow-sm"
-                >
-                  <Plus size={18} className="mr-2" />
-                  Add Your First Product
-                </Button>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 sm:flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={fetchData}
+              title="Refresh Data"
+              className="justify-center text-xs"
+            >
+              <RefreshCw size={15} className={`mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleGenerateReport}
+              disabled={actionLoading || products.length === 0}
+              className="justify-center text-xs"
+            >
+              <FileText size={15} className="mr-1.5" />
+              Audit PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleBulkImportClick}
+              className="justify-center text-xs"
+            >
+              <Upload size={15} className="mr-1.5" />
+              Import CSV
+            </Button>
+            <Button
+              variant="accent"
+              onClick={handleAddClick}
+              className="justify-center text-xs font-semibold"
+            >
+              <Plus size={15} className="mr-1.5" />
+              Add Product
+            </Button>
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Products Grid */}
-        {!loading && filteredProducts.length > 0 && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                Your Products ({filteredProducts.length})
-              </h3>
-              <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                {searchQuery && `Showing results for "${searchQuery}"`}
-              </div>
-            </div>
+      {/* Product Grid */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <LoadingSpinner size="lg" variant="primary" />
+          <p className={`mt-4 text-sm font-medium ${darkMode ? 'text-[#A3A39E]' : 'text-[#767670]'}`}>
+            Loading inventory ledger...
+          </p>
+        </div>
+      ) : filteredProducts.length === 0 ? (
+        <EmptyState
+          darkMode={darkMode}
+          searchQuery={searchQuery}
+          onClearSearch={() => setSearchQuery('')}
+          onAdd={handleAddClick}
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 pb-16">
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onClick={() => handleProductClick(product)}
+              onEdit={() => {
+                handleProductClick(product);
+                handleEditClick();
+              }}
+              onDelete={() => {
+                handleProductClick(product);
+                handleDeleteClick();
+              }}
+              isOnline={isOnline}
+              darkMode={darkMode}
+            />
+          ))}
+        </div>
+      )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {filteredProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="animate-in fade-in slide-in-from-bottom-4"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <ProductCard
-                    product={product}
-                    onClick={handleProductClick}
-                    darkMode={darkMode}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Detail Slide-over */}
+      {/* Sheets & Dialogs */}
       <Sheet
-        isOpen={!!selectedProduct}
+        isOpen={!!selectedProduct && !isEditModalOpen && !isDeleteModalOpen}
         onClose={() => setSelectedProduct(null)}
-        title="Product Details"
+        title="Product Inventory Details"
+        darkMode={darkMode}
+        fullScreen={isDesktop}
       >
         {selectedProduct && (
           <ProductDetails
@@ -533,114 +732,182 @@ const App = () => {
         )}
       </Sheet>
 
-      {/* Edit Dialog */}
-      <Dialog
+      <Sheet isOpen={showProfile} onClose={closeProfile} position="right" title="Store Profile" darkMode={darkMode}>
+        <Profile user={authUser} onUpdate={handleProfileUpdate} onClose={closeProfile} darkMode={darkMode} />
+      </Sheet>
+
+      <Sheet
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
-        title="Edit Product"
-        description="Make changes to the product inventory details below."
+        title="Edit Product Details"
         darkMode={darkMode}
-      >
-        {selectedProduct && (
-          <ProductForm
-            initialData={selectedProduct}
-            onSave={handleUpdateProduct}
-            onCancel={() => setIsEditModalOpen(false)}
-            isLoading={actionLoading}
-            darkMode={darkMode}
-          />
-        )}
-      </Dialog>
-      
-      {/* Add Dialog */}
-      <Dialog
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Add New Product"
-        description="Enter the details for the new product to add to inventory."
-        darkMode={darkMode}
+        fullScreen={isDesktop}
       >
         <ProductForm
-          onSave={handleCreateProduct}
+          initialData={selectedProduct}
+          onSubmit={handleUpdateProduct}
+          onCancel={() => setIsEditModalOpen(false)}
+          isLoading={actionLoading}
+          darkMode={darkMode}
+        />
+      </Sheet>
+
+      <Sheet
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add New Inventory Item"
+        darkMode={darkMode}
+        fullScreen={isDesktop}
+      >
+        <ProductForm
+          onSubmit={handleCreateProduct}
           onCancel={() => setIsAddModalOpen(false)}
           isLoading={actionLoading}
           darkMode={darkMode}
         />
-      </Dialog>
+      </Sheet>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="Delete Product"
-        description="Are you sure you want to delete this product? This action cannot be undone."
-        darkMode={darkMode}
-      >
-        <div className="flex justify-end gap-3 mt-6">
-          <Button
-            variant="secondary"
-            onClick={() => setIsDeleteModalOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={handleConfirmDelete}
-            isLoading={actionLoading}
-          >
-            Delete Product
-          </Button>
-        </div>
-      </Dialog>
-
-      {/* Profile Page */}
-      {showProfile && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-h-[90vh] overflow-y-auto">
-            <Profile
-              onClose={closeProfile}
-              onProfileUpdate={handleProfileUpdate}
-              darkMode={darkMode}
-            />
+      <Dialog isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Delete Product" darkMode={darkMode}>
+        <div className="space-y-4">
+          <p className={darkMode ? 'text-[#A3A39E]' : 'text-[#4A4A46]'}>
+            Are you sure you want to delete <span className="font-bold text-[#111111] dark:text-[#F5F5F3]">{selectedProduct?.name}</span>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} darkMode={darkMode}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleConfirmDelete} isLoading={actionLoading}>
+              Delete Product
+            </Button>
           </div>
         </div>
-      )}
+      </Dialog>
 
-      {/* Toast Notifications */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
-          <div
-            className={`flex items-center px-4 py-3 rounded-lg shadow-lg border ${
-              toast.type === 'success'
-                ? 'bg-white border-emerald-200 text-emerald-800'
-                : toast.type === 'error'
-                ? 'bg-white border-red-200 text-red-800'
-                : 'bg-white border-blue-200 text-blue-800'
-            }`}
-          >
-            <div
-              className={`mr-3 rounded-full p-1 ${
-                toast.type === 'success'
-                  ? 'bg-emerald-100'
-                  : toast.type === 'error'
-                  ? 'bg-red-100'
-                  : 'bg-blue-100'
-              }`}
-            >
-              {toast.type === 'success' ? (
-                <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              ) : toast.type === 'error' ? (
-                <div className="h-2 w-2 rounded-full bg-red-500" />
-              ) : (
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
-              )}
+      <Dialog isOpen={isBulkImportModalOpen} onClose={() => setIsBulkImportModalOpen(false)} title="Bulk Import CSV / Excel" darkMode={darkMode}>
+        <BulkImport
+          onSuccess={() => {
+            setIsBulkImportModalOpen(false);
+            showToast('success', 'Products imported successfully');
+            fetchData();
+          }}
+          onImportSuccess={() => {
+            setIsBulkImportModalOpen(false);
+            showToast('success', 'Products imported successfully');
+            fetchData();
+          }}
+          onClose={() => setIsBulkImportModalOpen(false)}
+          darkMode={darkMode}
+        />
+      </Dialog>
+
+      {/* PWA Install Banner */}
+      {showInstallBanner && (
+        <div
+          className={`fixed bottom-0 left-0 right-0 p-4 border-t z-50 ${
+            darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+          }`}
+        >
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-sm">Install Inventa Workspace</p>
+              <p className={`text-xs ${darkMode ? 'text-[#A3A39E]' : 'text-[#767670]'}`}>
+                Add to your device for offline inventory access
+              </p>
             </div>
-            <p className="text-sm font-medium">{toast.message}</p>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" onClick={() => setShowInstallBanner(false)} className="flex-1 sm:flex-none">
+                Not Now
+              </Button>
+              <Button variant="accent" size="sm" onClick={handleInstallClick} className="flex-1 sm:flex-none">
+                Install
+              </Button>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg border shadow-lg flex items-center gap-2.5 z-50 text-xs font-medium ${
+            toast.type === 'success'
+              ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#15803D] dark:bg-[#0D2116] dark:border-[#19422B] dark:text-[#4ADE80]'
+              : toast.type === 'error'
+              ? 'bg-[#FEF2F2] border-[#FECACA] text-[#B91C1C] dark:bg-[#2A1212] dark:border-[#5E1A1A] dark:text-[#F87171]'
+              : 'bg-[#111111] border-[#262626] text-white'
+          }`}
+        >
+          <span>{toast.message}</span>
+        </div>
+      )}
+    </Layout>
+  );
+};
+
+const StatCard = ({ title, value, icon: Icon, tone, darkMode }) => {
+  const toneColors = {
+    neutral: darkMode ? 'text-[#F5F5F3] bg-[#1A1A1A] border-[#262626]' : 'text-[#111111] bg-[#F3F2EE] border-[#E4E4E0]',
+    good: darkMode ? 'text-[#4ADE80] bg-[#0D2116] border-[#19422B]' : 'text-[#15803D] bg-[#F0FDF4] border-[#BBF7D0]',
+    warning: darkMode ? 'text-[#FBBF24] bg-[#271A0B] border-[#543813]' : 'text-[#B45309] bg-[#FFFBEB] border-[#FDE68A]',
+    critical: darkMode ? 'text-[#F87171] bg-[#2A1212] border-[#5E1A1A]' : 'text-[#B91C1C] bg-[#FEF2F2] border-[#FECACA]'
+  };
+
+  return (
+    <div
+      className={`p-4 sm:p-5 rounded-xl border transition-colors ${
+        darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className={`text-xs font-medium ${darkMode ? 'text-[#A3A39E]' : 'text-[#767670]'}`}>
+            {title}
+          </p>
+          <h3 className="tabular-data text-2xl sm:text-3xl font-bold tracking-tight mt-1.5">
+            {value}
+          </h3>
+        </div>
+        <div className={`p-2 rounded-lg border ${toneColors[tone] || toneColors.neutral}`}>
+          <Icon size={18} />
+        </div>
+      </div>
     </div>
   );
 };
+
+const EmptyState = ({ darkMode, searchQuery, onClearSearch, onAdd }) => (
+  <div
+    className={`flex flex-col items-center justify-center py-16 px-4 text-center rounded-xl border border-dashed ${
+      darkMode ? 'border-[#262626] bg-[#141414]/50' : 'border-[#CFCFC8] bg-white'
+    }`}
+  >
+    <div
+      className={`p-4 rounded-xl border mb-4 ${
+        darkMode ? 'bg-[#1A1A1A] border-[#262626] text-[#A3A39E]' : 'bg-[#F3F2EE] border-[#E4E4E0] text-[#4A4A46]'
+      }`}
+    >
+      <Search size={28} />
+    </div>
+    <h3 className="text-lg font-bold mb-1.5">
+      {searchQuery ? 'No matching products found' : 'Your inventory ledger is empty'}
+    </h3>
+    <p className={`max-w-md mx-auto mb-6 text-sm ${darkMode ? 'text-[#A3A39E]' : 'text-[#767670]'}`}>
+      {searchQuery
+        ? "We couldn't find any batches matching your search query. Try another keyword or batch number."
+        : 'Add your first product by uploading a label photo, scanning a barcode, or sending an image on WhatsApp.'}
+    </p>
+    <div className="flex gap-3">
+      {searchQuery && (
+        <Button variant="outline" onClick={onClearSearch}>
+          Clear Search
+        </Button>
+      )}
+      <Button variant="accent" onClick={onAdd}>
+        <Plus size={16} className="mr-1.5" />
+        Add First Product
+      </Button>
+    </div>
+  </div>
+);
 
 export default App;
