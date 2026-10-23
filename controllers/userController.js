@@ -9,6 +9,7 @@ const generateToken = (user) => {
       userId: user._id,
       username: user.username,
       phoneNumber: user.phoneNumber,
+      telegramUserId: user.telegramUserId,
     },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
@@ -28,6 +29,7 @@ const getMe = async (req, res) => {
       username: user.username,
       email: user.email,
       phoneNumber: user.phoneNumber,
+      telegramUserId: user.telegramUserId,
       createdAt: user.createdAt,
     };
 
@@ -41,7 +43,7 @@ const getMe = async (req, res) => {
 const updateMe = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { username, email, phoneNumber } = req.body;
+    const { username, email, phoneNumber, telegramUserId } = req.body;
 
     if (!username || !phoneNumber) {
       return res
@@ -70,13 +72,21 @@ const updateMe = async (req, res) => {
         .json({ error: 'Username, email, or phone number already in use' });
     }
 
+    // Prepare update object
+    const updateData = {
+      username,
+      email: email || undefined,
+      phoneNumber,
+    };
+
+    // Add telegramUserId to update if provided
+    if (telegramUserId !== undefined) {
+      updateData.telegramUserId = telegramUserId;
+    }
+
     const user = await User.findByIdAndUpdate(
       userId,
-      {
-        username,
-        email: email || undefined,
-        phoneNumber,
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -91,6 +101,7 @@ const updateMe = async (req, res) => {
       username: user.username,
       email: user.email,
       phoneNumber: user.phoneNumber,
+      telegramUserId: user.telegramUserId,
     };
 
     return res.status(200).json({ user: userSafe, token });
