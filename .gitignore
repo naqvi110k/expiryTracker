@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dev-dist
+frontend/dev-dist
 *.local
 
 # Editor directories and files
@@ -23,3 +25,13 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Git configuration setup files
+.gitconfig.template
+setup-git-linux.sh
+setup-git-windows.bat
+GIT_SETUP_README.md
+.githooks/
+.gitmessage
+
+.vercel
