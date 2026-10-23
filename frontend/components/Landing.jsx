@@ -1,24 +1,128 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle, Barcode, Bell, Flame, BarChart3, Users, ArrowRight, Menu, X, Shield, Leaf, TrendingUp, Sun, Moon } from 'lucide-react';
-import Button from './ui/Button';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Bell,
+  BookOpen,
+  Boxes,
+  Calendar,
+  Camera,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Download,
+  FileText,
+  Layers,
+  Menu,
+  MessageCircle,
+  Moon,
+  Package,
+  Pill,
+  Scan,
+  ShieldCheck,
+  ShoppingCart,
+  Store,
+  Sun,
+  UtensilsCrossed,
+  X,
+  AlertTriangle
+} from 'lucide-react';
+import { commonFAQs, pageSEO } from '../utils/seoConfig';
+
+const SAMPLE_LEDGER_ITEMS = [
+  {
+    name: 'Amoxicillin 500mg Capsules',
+    category: 'Pharmacy · Rx',
+    batch: 'LOT-8941A',
+    qty: '48 boxes',
+    expiry: 'Nov 02, 2026',
+    daysLeft: '5d left',
+    action: 'Pull to Front',
+    tone: 'critical'
+  },
+  {
+    name: ' Chobani Greek Yogurt 500g',
+    category: 'Dairy & Chilled',
+    batch: 'BT-2049C',
+    qty: '18 tubs',
+    expiry: 'Nov 16, 2026',
+    daysLeft: '19d left',
+    action: '25% Markdown',
+    tone: 'warning'
+  },
+  {
+    name: 'Similac Infant Formula Stage 1',
+    category: 'Pediatric Nutrition',
+    batch: 'LOT-4410B',
+    qty: '32 tins',
+    expiry: 'Nov 24, 2026',
+    daysLeft: '27d left',
+    action: 'Supplier Return',
+    tone: 'warning'
+  },
+  {
+    name: 'Oatly Barista Oat Milk 1L',
+    category: 'Beverages',
+    batch: 'OAT-9921X',
+    qty: '120 cartons',
+    expiry: 'Mar 18, 2027',
+    daysLeft: '142d left',
+    action: 'Healthy Stock',
+    tone: 'good'
+  }
+];
+
+const FEATURED_GUIDES = [
+  {
+    title: 'FIFO vs FEFO: Why Expiry-First Rotation Saves 4.2% in Retail Margin',
+    slug: 'fifo-vs-fefo-inventory-rotation-guide',
+    tag: 'Stock Rotation',
+    readTime: '6 min read'
+  },
+  {
+    title: 'Pharmacy Expiry Management: FDA & State Board Compliance Checklist',
+    slug: 'pharmacy-expiry-date-tracking-guide',
+    tag: 'Pharmacy Compliance',
+    readTime: '8 min read'
+  },
+  {
+    title: 'How to Reduce Grocery Shrinkage with Automated Markdown Schedules',
+    slug: 'reduce-food-waste-grocery-stores',
+    tag: 'Grocery Operations',
+    readTime: '7 min read'
+  }
+];
 
 const Landing = ({ onGetStarted }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [activeFaqIndex, setActiveFaqIndex] = useState(0);
+  const [previewFilter, setPreviewFilter] = useState('all');
+
+  // Interactive ROI & Shrinkage Simulator state
+  const [monthlyTurnover, setMonthlyTurnover] = useState(25000);
+  const [estimatedSpoilage, setEstimatedSpoilage] = useState(3.5);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
       setDarkMode(true);
       document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
   }, []);
 
   const toggleTheme = () => {
-    const newMode = !darkMode;
-    setDarkMode(newMode);
-    document.documentElement.classList.toggle('dark', newMode);
-    localStorage.setItem('theme', newMode ? 'dark' : 'light');
+    const nextMode = !darkMode;
+    setDarkMode(nextMode);
+    document.documentElement.classList.toggle('dark', nextMode);
+    localStorage.setItem('theme', nextMode ? 'dark' : 'light');
   };
 
   const scrollToSection = (id) => {
@@ -29,190 +133,1141 @@ const Landing = ({ onGetStarted }) => {
     }
   };
 
+  const filteredLedger = SAMPLE_LEDGER_ITEMS.filter((item) => {
+    if (previewFilter === 'expiring') return item.tone === 'critical' || item.tone === 'warning';
+    if (previewFilter === 'healthy') return item.tone === 'good';
+    return true;
+  });
+
+  // Calculations for interactive shrinkage calculator
+  const annualLoss = Math.round(monthlyTurnover * (estimatedSpoilage / 100) * 12);
+  const annualRecovered = Math.round(annualLoss * 0.78);
+  const monthlyRecovered = Math.round(annualRecovered / 12);
+
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-      {/* Navigation */}
-      <nav className={`sticky top-0 z-50 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} shadow-sm`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">E</span>
+    <div
+      className={`min-h-screen font-sans transition-colors duration-200 ${
+        darkMode ? 'bg-[#0A0A0A] text-[#F5F5F3]' : 'bg-[#FAF9F6] text-[#111111]'
+      }`}
+    >
+      <Helmet>
+        <title>{pageSEO.home.title}</title>
+        <meta name="description" content={pageSEO.home.description} />
+        <meta name="keywords" content={pageSEO.home.keywords.join(', ')} />
+        <link rel="canonical" href={`https://expiry-tracker.live${pageSEO.home.path}`} />
+        <meta property="og:title" content={pageSEO.home.title} />
+        <meta property="og:description" content={pageSEO.home.description} />
+        <meta property="og:url" content={`https://expiry-tracker.live${pageSEO.home.path}`} />
+        <meta name="twitter:title" content={pageSEO.home.title} />
+        <meta name="twitter:description" content={pageSEO.home.description} />
+      </Helmet>
+
+      {/* ===== TOP NAVIGATION BAR ===== */}
+      <header
+        className={`sticky top-0 z-50 border-b transition-colors duration-150 ${
+          darkMode
+            ? 'bg-[#0A0A0A]/95 border-[#262626]'
+            : 'bg-[#FAF9F6]/95 border-[#E4E4E0]'
+        } backdrop-blur-sm`}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+          {/* Brand Mark */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#111111] dark:bg-[#F5F5F3] text-[#FAF9F6] dark:text-[#0A0A0A] transition-transform duration-150 group-hover:scale-[1.02]">
+              <Boxes size={18} strokeWidth={2.2} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-base tracking-tight leading-none">
+                  Inventa
+                </span>
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-mono font-medium border ${
+                    darkMode
+                      ? 'border-[#262626] bg-[#141414] text-[#A3A39E]'
+                      : 'border-[#E4E4E0] bg-[#F3F2EE] text-[#4A4A46]'
+                  }`}
+                >
+                  FEFO
+                </span>
               </div>
-              <span className={`font-bold text-xl ${darkMode ? 'text-white' : 'text-slate-900'} hidden sm:inline`}>Inventa</span>
+              <p
+                className={`text-[11px] leading-none mt-1 ${
+                  darkMode ? 'text-[#6E6E68]' : 'text-[#767670]'
+                }`}
+              >
+                Shelf-Life &amp; Expiry Control
+              </p>
             </div>
+          </Link>
 
-            {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-8">
-              <button onClick={() => scrollToSection('features')} className={`${darkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition text-sm font-medium`}>
-                Features
+          {/* Desktop Navigation */}
+          <nav className="hidden items-center gap-7 md:flex" aria-label="Primary Navigation">
+            {[
+              ['Features', 'features'],
+              ['How It Works', 'how-it-works'],
+              ['ROI Simulator', 'calculator'],
+              ['Industries', 'industries'],
+              ['FAQ', 'faq']
+            ].map(([label, id]) => (
+              <button
+                key={label}
+                onClick={() => scrollToSection(id)}
+                className={`text-sm font-medium transition-colors cursor-pointer ${
+                  darkMode
+                    ? 'text-[#A3A39E] hover:text-[#F5F5F3]'
+                    : 'text-[#4A4A46] hover:text-[#111111]'
+                }`}
+              >
+                {label}
               </button>
-              <button onClick={() => scrollToSection('how-it-works')} className={`${darkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition text-sm font-medium`}>
-                How It Works
-              </button>
-              <button onClick={() => scrollToSection('testimonials')} className={`${darkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition text-sm font-medium`}>
-                Testimonials
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className={`${darkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'} transition text-sm font-medium`}>
-                Pricing
-              </button>
-            </div>
+            ))}
+            <Link
+              to="/expiry-calculator"
+              className={`text-sm font-medium transition-colors ${
+                darkMode
+                  ? 'text-[#A3A39E] hover:text-[#F5F5F3]'
+                  : 'text-[#4A4A46] hover:text-[#111111]'
+              }`}
+            >
+              Calculator
+            </Link>
+            <Link
+              to="/blog"
+              className={`text-sm font-medium transition-colors ${
+                darkMode
+                  ? 'text-[#A3A39E] hover:text-[#F5F5F3]'
+                  : 'text-[#4A4A46] hover:text-[#111111]'
+              }`}
+            >
+              Guides
+            </Link>
+          </nav>
 
-            {/* CTA + Mobile Menu */}
-            <div className="flex items-center space-x-4">
+          {/* Right Actions */}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle color theme"
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors cursor-pointer ${
+                darkMode
+                  ? 'border-[#262626] bg-[#141414] text-[#F5F5F3] hover:bg-[#1A1A1A]'
+                  : 'border-[#E4E4E0] bg-white text-[#4A4A46] hover:bg-[#F3F2EE]'
+              }`}
+            >
+              {darkMode ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+
+            <Link
+              to="/login"
+              className={`hidden sm:inline-flex items-center h-9 px-3.5 text-xs font-semibold rounded-lg border transition-colors ${
+                darkMode
+                  ? 'border-[#262626] bg-[#141414] text-[#F5F5F3] hover:bg-[#1A1A1A]'
+                  : 'border-[#CFCFC8] bg-white text-[#111111] hover:bg-[#F3F2EE]'
+              }`}
+            >
+              Sign In
+            </Link>
+
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-1.5 h-9 px-4 text-xs font-semibold rounded-lg bg-[#15803D] hover:bg-[#14532D] text-white transition-all active:translate-y-[1px]"
+            >
+              <span>Start Free</span>
+              <ArrowRight size={13} />
+            </Link>
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+              className={`flex h-9 w-9 items-center justify-center rounded-lg border md:hidden ${
+                darkMode
+                  ? 'border-[#262626] bg-[#141414] text-[#F5F5F3]'
+                  : 'border-[#E4E4E0] bg-white text-[#111111]'
+              }`}
+            >
+              {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Drawer */}
+        {mobileMenuOpen && (
+          <div
+            className={`border-t md:hidden px-4 py-4 space-y-1.5 ${
+              darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#FAF9F6] border-[#E4E4E0]'
+            }`}
+          >
+            {[
+              ['Features', 'features'],
+              ['How It Works', 'how-it-works'],
+              ['ROI Simulator', 'calculator'],
+              ['Industries', 'industries'],
+              ['FAQ', 'faq']
+            ].map(([label, id]) => (
               <button
-                onClick={toggleTheme}
-                className={`p-2 rounded-lg transition-all duration-300 ${darkMode ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-white text-slate-700 hover:bg-slate-100'} shadow-lg`}
-                title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                key={label}
+                onClick={() => scrollToSection(id)}
+                className="block w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
               >
-                {darkMode ? <Sun size={24} /> : <Moon size={24} />}
+                {label}
               </button>
-              <button
-                onClick={onGetStarted}
-                className={`hidden sm:inline-block px-6 py-2.5 ${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg font-medium transition text-sm`}
+            ))}
+            <Link
+              to="/expiry-calculator"
+              className="block w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+            >
+              Shelf-Life Calculator
+            </Link>
+            <Link
+              to="/blog"
+              className="block w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+            >
+              Inventory Guides &amp; Blog
+            </Link>
+            <div className="pt-3 mt-2 border-t border-[#E4E4E0] dark:border-[#262626] grid grid-cols-2 gap-2">
+              <Link
+                to="/login"
+                className="py-2.5 text-center text-xs font-semibold rounded-lg border border-[#CFCFC8] dark:border-[#262626]"
               >
-                Get Started
-              </button>
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className={`md:hidden p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'}`}
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="py-2.5 text-center text-xs font-semibold rounded-lg bg-[#15803D] text-white"
               >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
+                Start Free
+              </Link>
             </div>
           </div>
+        )}
+      </header>
 
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className={`md:hidden pb-4 space-y-2 border-t ${darkMode ? 'border-slate-700 pt-4' : 'border-slate-200 pt-4'}`}>
-              <button onClick={() => scrollToSection('features')} className={`block w-full text-left px-4 py-2 text-sm ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} rounded`}>
-                Features
-              </button>
-              <button onClick={() => scrollToSection('how-it-works')} className={`block w-full text-left px-4 py-2 text-sm ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} rounded`}>
-                How It Works
-              </button>
-              <button onClick={() => scrollToSection('testimonials')} className={`block w-full text-left px-4 py-2 text-sm ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} rounded`}>
-                Testimonials
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className={`block w-full text-left px-4 py-2 text-sm ${darkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'} rounded`}>
-                Pricing
-              </button>
-              <button onClick={onGetStarted} className={`w-full mt-2 px-6 py-2.5 ${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg font-medium transition text-sm`}>
-                Get Started
-              </button>
-            </div>
-          )}
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className={`relative overflow-hidden py-20 lg:py-32 ${darkMode ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 via-white to-cyan-50'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            {/* Badge */}
-            <div className={`inline-flex items-center space-x-2 ${darkMode ? 'bg-slate-700 text-slate-200' : 'bg-blue-100 text-blue-700'} px-4 py-2 rounded-full mb-6 text-sm font-medium`}>
-              <CheckCircle size={16} />
-              <span>Trusted by 10,000+ shopkeepers</span>
-            </div>
-
-            {/* Headline */}
-            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-6 leading-tight`}>
-              Never Miss an <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Expiry Date</span> Again
-            </h1>
-
-            {/* Subheadline */}
-            <p className={`text-lg sm:text-xl ${darkMode ? 'text-slate-300' : 'text-slate-600'} mb-8 max-w-2xl mx-auto`}>
-              Smart barcode scanning, AI-powered reminders, and real-time analytics to reduce waste and boost your bottom line.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={onGetStarted}
-                className={`w-full sm:w-auto px-8 py-4 ${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg font-semibold flex items-center justify-center space-x-2 transition transform hover:scale-105`}
-              >
-                <span>Get Started Free</span>
-                <ArrowRight size={20} />
-              </button>
-              <button
-                onClick={() => scrollToSection('how-it-works')}
-                className={`w-full sm:w-auto px-8 py-4 border-2 ${darkMode ? 'border-slate-600 hover:bg-slate-700 text-white' : 'border-slate-300 hover:bg-slate-50 text-slate-900'} rounded-lg font-semibold transition`}
-              >
-                Learn More
-              </button>
-            </div>
-
-            {/* Social Proof */}
-            <div className={`mt-12 flex flex-wrap justify-center items-center gap-8 text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              <div className="flex items-center space-x-2">
-                <div className="flex -space-x-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className={`w-8 h-8 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-full border-2 ${darkMode ? 'border-slate-800' : 'border-white'}`} />
-                  ))}
-                </div>
-                <span>Join thousands today</span>
+      {/* ===== HERO SECTION: ASYMMETRIC SPLIT + LIVE PRODUCT WORKSPACE ===== */}
+      <section className="relative pt-12 pb-20 sm:pt-20 sm:pb-28 border-b border-[#E4E4E0] dark:border-[#262626]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-12 lg:gap-10 items-start">
+            {/* Left Column: Editorial Value Proposition (6 Cols) */}
+            <div className="lg:col-span-6 space-y-6 pt-2">
+              {/* Eyebrow Pill */}
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-[#E4E4E0] dark:border-[#262626] bg-white dark:bg-[#141414] px-3.5 py-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#15803D] dark:bg-[#22C55E]" />
+                <span className="text-xs font-medium text-[#4A4A46] dark:text-[#A3A39E]">
+                  WhatsApp-Native Inventory Control
+                </span>
+                <span className="text-[#CFCFC8] dark:text-[#383838]">·</span>
+                <span className="text-xs font-mono font-semibold text-[#15803D] dark:text-[#4ADE80]">
+                  100% Free
+                </span>
               </div>
-              <div>⭐ 4.9/5 rating</div>
+
+              {/* Editorial Display Headline */}
+              <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-[-0.03em] leading-[1.08] text-[#111111] dark:text-[#F5F5F3]">
+                Stop writing off expired inventory.{' '}
+                <span className="font-editorial italic font-normal text-[#15803D] dark:text-[#4ADE80]">
+                  Track every batch from a WhatsApp photo.
+                </span>
+              </h1>
+
+              {/* Body Copy */}
+              <p className="text-base sm:text-lg leading-relaxed text-[#4A4A46] dark:text-[#A3A39E] max-w-xl">
+                Built for independent pharmacies, grocery stores, and local retailers. Snap a photo of any product label on WhatsApp—Inventa reads the batch number and expiry date in seconds, logs it to your ledger, and sends daily 9:00 AM alerts before stock goes bad.
+              </p>
+
+              {/* Primary & Secondary CTAs */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center gap-2.5 h-12 px-6 rounded-lg bg-[#111111] hover:bg-[#262626] dark:bg-[#F5F5F3] dark:hover:bg-[#E4E4E0] text-[#FAF9F6] dark:text-[#0A0A0A] font-semibold text-sm transition-all active:translate-y-[1px]"
+                >
+                  <MessageCircle size={17} />
+                  <span>Create Free Store Account</span>
+                  <ArrowRight size={15} />
+                </Link>
+
+                <Link
+                  to="/expiry-calculator"
+                  className={`inline-flex items-center justify-center gap-2 h-12 px-5 rounded-lg border text-sm font-semibold transition-all active:translate-y-[1px] ${
+                    darkMode
+                      ? 'border-[#262626] bg-[#141414] text-[#F5F5F3] hover:bg-[#1A1A1A]'
+                      : 'border-[#CFCFC8] bg-white text-[#111111] hover:bg-[#F3F2EE]'
+                  }`}
+                >
+                  <Calendar size={16} className="text-[#15803D] dark:text-[#4ADE80]" />
+                  <span>Try Shelf-Life Calculator</span>
+                </Link>
+              </div>
+
+              {/* Micro-guarantees */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#767670] dark:text-[#A3A39E] pt-1">
+                <span className="inline-flex items-center gap-1.5">
+                  <Check size={14} className="text-[#15803D] dark:text-[#4ADE80]" />
+                  No app download for staff
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Check size={14} className="text-[#15803D] dark:text-[#4ADE80]" />
+                  Works with dot-matrix &amp; thermal stamps
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Check size={14} className="text-[#15803D] dark:text-[#4ADE80]" />
+                  1-click audit PDFs
+                </span>
+              </div>
+
+              {/* Tabular Metrics Bar */}
+              <div className="pt-6 border-t border-[#E4E4E0] dark:border-[#262626] grid grid-cols-3 gap-6 max-w-lg">
+                <div>
+                  <div className="tabular-data text-2xl sm:text-3xl font-bold text-[#111111] dark:text-[#F5F5F3]">
+                    10,480+
+                  </div>
+                  <div className="text-xs text-[#767670] dark:text-[#6E6E68] mt-1">
+                    Batches monitored
+                  </div>
+                </div>
+                <div>
+                  <div className="tabular-data text-2xl sm:text-3xl font-bold text-[#111111] dark:text-[#F5F5F3]">
+                    1.8 sec
+                  </div>
+                  <div className="text-xs text-[#767670] dark:text-[#6E6E68] mt-1">
+                    Label OCR speed
+                  </div>
+                </div>
+                <div>
+                  <div className="tabular-data text-2xl sm:text-3xl font-bold text-[#15803D] dark:text-[#4ADE80]">
+                    78%
+                  </div>
+                  <div className="text-xs text-[#767670] dark:text-[#6E6E68] mt-1">
+                    Waste reduction
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Authentic Product Workspace + WhatsApp Intake Card (6 Cols) */}
+            <div className="lg:col-span-6 space-y-4">
+              {/* Main Card: Live Inventory Ledger Preview */}
+              <div
+                className={`rounded-xl border overflow-hidden shadow-[0_12px_32px_-8px_rgba(17,17,17,0.07)] ${
+                  darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+                }`}
+              >
+                {/* Workspace Window Topbar */}
+                <div
+                  className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b ${
+                    darkMode ? 'bg-[#1A1A1A] border-[#262626]' : 'bg-[#F3F2EE] border-[#E4E4E0]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#CFCFC8] dark:bg-[#383838]" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#CFCFC8] dark:bg-[#383838]" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#CFCFC8] dark:bg-[#383838]" />
+                    </div>
+                    <span className="text-xs font-semibold tracking-tight ml-1">
+                      Inventa Shelf Ledger — GreenLeaf Pharmacy
+                    </span>
+                  </div>
+
+                  {/* Interactive Filter Pills */}
+                  <div className="flex items-center gap-1">
+                    {[
+                      ['all', 'All (4)'],
+                      ['expiring', 'Action Needed (3)'],
+                      ['healthy', 'Healthy (1)']
+                    ].map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => setPreviewFilter(key)}
+                        className={`px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                          previewFilter === key
+                            ? 'bg-[#111111] text-white dark:bg-[#F5F5F3] dark:text-[#0A0A0A]'
+                            : darkMode
+                            ? 'text-[#A3A39E] hover:bg-[#222222]'
+                            : 'text-[#4A4A46] hover:bg-[#EAE8E1]'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ledger Table Rows */}
+                <div className="divide-y divide-[#E4E4E0] dark:divide-[#262626]">
+                  {filteredLedger.map((item) => {
+                    const pillStyle =
+                      item.tone === 'critical'
+                        ? 'bg-[#FEF2F2] text-[#B91C1C] border-[#FECACA] dark:bg-[#2A1212] dark:text-[#F87171] dark:border-[#5E1A1A]'
+                        : item.tone === 'warning'
+                        ? 'bg-[#FFFBEB] text-[#B45309] border-[#FDE68A] dark:bg-[#271A0B] dark:text-[#FBBF24] dark:border-[#543813]'
+                        : 'bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0] dark:bg-[#0D2116] dark:text-[#4ADE80] dark:border-[#19422B]';
+
+                    return (
+                      <div
+                        key={item.batch}
+                        className="px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF9F6] dark:hover:bg-[#1A1A1A]/60 transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold truncate">{item.name}</p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-xs text-[#767670] dark:text-[#A3A39E]">
+                            <span>{item.category}</span>
+                            <span>·</span>
+                            <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-[#F3F2EE] dark:bg-[#1A1A1A] text-[#111111] dark:text-[#F5F5F3]">
+                              {item.batch}
+                            </span>
+                            <span>·</span>
+                            <span className="tabular-data">{item.qty}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-[11px] font-mono font-medium ${pillStyle}`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${
+                                item.tone === 'critical'
+                                  ? 'bg-[#DC2626]'
+                                  : item.tone === 'warning'
+                                  ? 'bg-[#D97706]'
+                                  : 'bg-[#16A34A]'
+                              }`}
+                            />
+                            {item.action} · {item.daysLeft}
+                          </span>
+                          <div className="text-[11px] font-mono text-[#767670] dark:text-[#6E6E68] mt-1">
+                            Exp: {item.expiry}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Ledger Footer */}
+                <div
+                  className={`px-4 py-2.5 border-t flex items-center justify-between text-xs ${
+                    darkMode
+                      ? 'bg-[#1A1A1A] border-[#262626] text-[#A3A39E]'
+                      : 'bg-[#FAF9F6] border-[#E4E4E0] text-[#4A4A46]'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Bell size={13} className="text-[#15803D] dark:text-[#4ADE80]" />
+                    Next WhatsApp Digest: Tomorrow at 09:00 AM
+                  </span>
+                  <span className="font-mono text-[11px] font-medium text-[#111111] dark:text-[#F5F5F3]">
+                    FEFO Sorted
+                  </span>
+                </div>
+              </div>
+
+              {/* Secondary Card: Realistic WhatsApp Label Capture Flow */}
+              <div
+                className={`rounded-xl border p-4 sm:p-5 ${
+                  darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+                }`}
+              >
+                <div className="flex items-center justify-between pb-3 mb-3.5 border-b border-[#E4E4E0] dark:border-[#262626]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#15803D] text-white">
+                      <Camera size={15} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold">Instant WhatsApp Label Intake</div>
+                      <div className="text-[11px] text-[#767670] dark:text-[#A3A39E]">
+                        Staff sends a photo · AI extracts batch &amp; expiry in 1.8s
+                      </div>
+                    </div>
+                  </div>
+                  <span className="rounded-md border border-[#BBF7D0] bg-[#F0FDF4] dark:border-[#19422B] dark:bg-[#0D2116] px-2 py-0.5 text-[11px] font-mono font-medium text-[#15803D] dark:text-[#4ADE80]">
+                    99.4% OCR Match
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  {/* Simulated Stamped Package Label */}
+                  <div
+                    className={`sm:col-span-5 rounded-lg border p-3 ${
+                      darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#F3F2EE] border-[#E4E4E0]'
+                    }`}
+                  >
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#767670] dark:text-[#6E6E68] mb-1">
+                      Label Photo Sent
+                    </div>
+                    <div className="rounded border border-dashed border-[#CFCFC8] dark:border-[#383838] bg-white dark:bg-[#141414] p-2.5 font-mono text-xs space-y-1">
+                      <div className="font-bold text-[#111111] dark:text-[#F5F5F3]">
+                        AMOXICILLIN 500MG
+                      </div>
+                      <div className="text-[11px] text-[#4A4A46] dark:text-[#A3A39E]">
+                        LOT: 8941A
+                      </div>
+                      <div className="text-[11px] font-semibold text-[#B91C1C] dark:text-[#F87171]">
+                        EXP: 02 / 11 / 2026
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Extracted Reply Bubble */}
+                  <div
+                    className={`sm:col-span-7 rounded-lg border p-3 ${
+                      darkMode
+                        ? 'bg-[#0D2116]/60 border-[#19422B]'
+                        : 'bg-[#F0FDF4]/80 border-[#BBF7D0]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-[#15803D] dark:text-[#4ADE80] mb-1.5">
+                      <span className="inline-flex items-center gap-1">
+                        <CheckCircle2 size={13} />
+                        Inventa Bot Reply
+                      </span>
+                      <span className="font-mono text-[10px]">09:14 AM</span>
+                    </div>
+                    <p className="text-xs leading-relaxed text-[#111111] dark:text-[#F5F5F3]">
+                      Detected <strong>Amoxicillin 500mg</strong> · Batch{' '}
+                      <code className="font-mono font-semibold">LOT-8941A</code> · Expires{' '}
+                      <strong className="underline">Nov 2, 2026</strong>.
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-[#4A4A46] dark:text-[#A3A39E]">
+                      <span>Reply &ldquo;YES&rdquo; to save to inventory</span>
+                      <span className="font-mono font-bold text-[#15803D] dark:text-[#4ADE80]">
+                        ✓ Confirmed
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className={`py-20 lg:py-28 ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-4`}>
-              Powerful Features, Simple Interface
+      {/* ===== ASYMMETRIC BENTO GRID: CORE CAPABILITIES ===== */}
+      <section id="features" className="py-20 sm:py-24 border-b border-[#E4E4E0] dark:border-[#262626]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="max-w-2xl mb-14">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#15803D] dark:text-[#4ADE80] mb-3">
+              <Scan size={14} />
+              <span>Purpose-Built Shelf Intelligence</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em] text-[#111111] dark:text-[#F5F5F3]">
+              Everything your store needs to stop expiration write-offs.
             </h2>
-            <p className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'} max-w-2xl mx-auto`}>
-              Everything you need to manage inventory and reduce waste
+            <p className="mt-3 text-base text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+              Point-of-sale systems only track what sells at the register—they don&rsquo;t warn you when a case in the backroom is two weeks from expiring. Inventa closes that gap without adding paperwork.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* 12-Column Asymmetric Bento Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Bento Card 1: Wide (7 Cols) */}
+            <div
+              className={`lg:col-span-7 rounded-xl border p-6 sm:p-8 flex flex-col justify-between ${
+                darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-[#E4E4E0] dark:border-[#262626]">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#767670] dark:text-[#A3A39E]">
+                    01 · Vision OCR Engine
+                  </span>
+                  <span className="rounded-md border border-[#E4E4E0] dark:border-[#262626] bg-[#F3F2EE] dark:bg-[#1A1A1A] px-2.5 py-0.5 text-[11px] font-mono">
+                    Gemini Vision AI
+                  </span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight mt-5">
+                  Reads stamped lot codes, curved bottles, and pharmacy blisters
+                </h3>
+                <p className="mt-2.5 text-sm sm:text-base text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+                  Whether your suppliers use dot-matrix inkjets, embossed foil blisters, or thermal labels, Inventa extracts the product name, category, batch number, and exact expiry date from a single smartphone photo.
+                </p>
+              </div>
+
+              {/* Visual UI Micro-Preview */}
+              <div
+                className={`mt-6 rounded-lg border p-4 ${
+                  darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#FAF9F6] border-[#E4E4E0]'
+                }`}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-[#767670] dark:text-[#6E6E68]">
+                      Extracted SKU
+                    </div>
+                    <div className="text-xs font-semibold mt-1">Panadol Extra 500mg</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-[#767670] dark:text-[#6E6E68]">
+                      Batch / Lot
+                    </div>
+                    <div className="text-xs font-mono font-semibold mt-1">BN-40921X</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-[#767670] dark:text-[#6E6E68]">
+                      Expiry Date
+                    </div>
+                    <div className="text-xs font-mono font-semibold text-[#B45309] dark:text-[#FBBF24] mt-1">
+                      2026-11-30
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-mono uppercase text-[#767670] dark:text-[#6E6E68]">
+                      Verification
+                    </div>
+                    <div className="text-xs font-semibold text-[#15803D] dark:text-[#4ADE80] mt-1">
+                      Human Confirmed
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bento Card 2: Narrow (5 Cols) */}
+            <div
+              className={`lg:col-span-5 rounded-xl border p-6 sm:p-8 flex flex-col justify-between ${
+                darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-[#E4E4E0] dark:border-[#262626]">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#767670] dark:text-[#A3A39E]">
+                    02 · Proactive Alerts
+                  </span>
+                  <Bell size={16} className="text-[#15803D] dark:text-[#4ADE80]" />
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight mt-5">
+                  09:00 AM Daily WhatsApp Digest
+                </h3>
+                <p className="mt-2.5 text-sm sm:text-base text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+                  You don&rsquo;t need to remember to log into a dashboard. Every morning at 9:00 AM, receive a concise summary of batches hitting their 30-day, 14-day, and 7-day windows.
+                </p>
+              </div>
+
+              <div
+                className={`mt-6 rounded-lg border p-4 space-y-2.5 ${
+                  darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#FAF9F6] border-[#E4E4E0]'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold">Morning Shelf Digest</span>
+                  <span className="font-mono text-[11px] text-[#767670]">09:00 AM</span>
+                </div>
+                <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded bg-[#FEF2F2] dark:bg-[#2A1212] text-[#B91C1C] dark:text-[#F87171]">
+                  <span>Critical (&le; 7 days)</span>
+                  <span className="font-mono font-bold">3 batches</span>
+                </div>
+                <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded bg-[#FFFBEB] dark:bg-[#271A0B] text-[#B45309] dark:text-[#FBBF24]">
+                  <span>Return Window (&le; 30 days)</span>
+                  <span className="font-mono font-bold">8 batches</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bento Card 3: Narrow (5 Cols) */}
+            <div
+              className={`lg:col-span-5 rounded-xl border p-6 sm:p-8 flex flex-col justify-between ${
+                darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-[#E4E4E0] dark:border-[#262626]">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#767670] dark:text-[#A3A39E]">
+                    03 · FEFO Stock Rotation
+                  </span>
+                  <Layers size={16} className="text-[#15803D] dark:text-[#4ADE80]" />
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight mt-5">
+                  First-Expired, First-Out Priority
+                </h3>
+                <p className="mt-2.5 text-sm sm:text-base text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+                  Automatically ranks multiple shipments of the same SKU by expiration date so floor staff pull short-dated cartons to the front row first.
+                </p>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                <div
+                  className={`flex items-center justify-between p-3 rounded-lg border text-xs ${
+                    darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#FAF9F6] border-[#E4E4E0]'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold">Lot #A19 · Expires in 8d</div>
+                    <div className="text-[11px] text-[#767670]">14 units remaining</div>
+                  </div>
+                  <span className="rounded px-2 py-1 font-mono text-[11px] font-semibold bg-[#FFFBEB] text-[#B45309] dark:bg-[#271A0B] dark:text-[#FBBF24]">
+                    FRONT SHELF
+                  </span>
+                </div>
+                <div
+                  className={`flex items-center justify-between p-3 rounded-lg border text-xs ${
+                    darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#FAF9F6] border-[#E4E4E0]'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold">Lot #B04 · Expires in 92d</div>
+                    <div className="text-[11px] text-[#767670]">40 units in reserve</div>
+                  </div>
+                  <span className="rounded px-2 py-1 font-mono text-[11px] font-semibold bg-[#F0FDF4] text-[#15803D] dark:bg-[#0D2116] dark:text-[#4ADE80]">
+                    BACK STORAGE
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bento Card 4: Wide (7 Cols) */}
+            <div
+              className={`lg:col-span-7 rounded-xl border p-6 sm:p-8 flex flex-col justify-between ${
+                darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-[#E4E4E0] dark:border-[#262626]">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#767670] dark:text-[#A3A39E]">
+                    04 · Compliance &amp; Supplier Credits
+                  </span>
+                  <FileText size={16} className="text-[#15803D] dark:text-[#4ADE80]" />
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight mt-5">
+                  One-Click PDF Audit &amp; Distributor Return Reports
+                </h3>
+                <p className="mt-2.5 text-sm sm:text-base text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+                  Pharmaceutical distributors and food wholesalers often issue full credit only when returns are submitted 30 days prior to expiry. Generate clean, itemized PDF manifests or bulk-import supplier CSVs in seconds.
+                </p>
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center gap-2.5 pt-4 border-t border-[#E4E4E0] dark:border-[#262626]">
+                {[
+                  'Supplier Return Manifests (PDF)',
+                  'Bulk CSV & Excel Import',
+                  'Inspection-Ready Batch Logs',
+                  'Multi-Channel WhatsApp & Telegram'
+                ].map((feature) => (
+                  <span
+                    key={feature}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${
+                      darkMode
+                        ? 'border-[#262626] bg-[#0A0A0A] text-[#F5F5F3]'
+                        : 'border-[#E4E4E0] bg-[#FAF9F6] text-[#111111]'
+                    }`}
+                  >
+                    <Check size={13} className="text-[#15803D] dark:text-[#4ADE80]" />
+                    {feature}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== SUNKEN TONAL SECTION: HOW IT WORKS IN 3 STEPS ===== */}
+      <section
+        id="how-it-works"
+        className={`py-20 sm:py-24 border-b ${
+          darkMode
+            ? 'bg-[#141414] border-[#262626]'
+            : 'bg-[#F3F2EE] border-[#E4E4E0]'
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mb-14">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#15803D] dark:text-[#4ADE80] mb-3">
+              <MessageCircle size={14} />
+              <span>Zero Staff Training Required</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em]">
+              From delivery carton to tracked inventory in three steps.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: Barcode,
-                title: 'Barcode Scanning',
-                description: 'Instantly scan product barcodes to add items and track expiry dates with AI recognition.',
-                color: 'blue'
+                step: '01',
+                title: 'Snap a Photo on WhatsApp',
+                desc: 'When a new shipment arrives, point your phone camera at the product label or expiry stamp and send it to our verified WhatsApp number.',
+                meta: 'Takes ~3 seconds per item'
               },
               {
-                icon: Bell,
-                title: 'Smart Reminders',
-                description: 'Get timely notifications before products expire. Never let stock go to waste.',
-                color: 'cyan'
+                step: '02',
+                title: 'Confirm Extracted Details',
+                desc: 'Inventa replies immediately with the parsed product name, batch code, and expiration date. Reply "YES" to confirm or type a quick edit.',
+                meta: 'Human-in-the-loop accuracy'
               },
               {
-                icon: Flame,
-                title: 'Habit Streaks',
-                description: 'Build consistent inventory checking habits with streak tracking and achievements.',
-                color: 'orange'
-              },
-              {
-                icon: BarChart3,
-                title: 'Advanced Analytics',
-                description: 'Track waste reduction, savings, and inventory trends with detailed reports.',
-                color: 'purple'
+                step: '03',
+                title: 'Receive Morning Alerts',
+                desc: 'Your item is now monitored 24/7. Get automated WhatsApp reminders 30, 14, and 7 days before expiry so you can discount or return stock.',
+                meta: 'Automated daily at 09:00 AM'
               }
-            ].map((feature, index) => {
-              const Icon = feature.icon;
-              const colorClasses = {
-                blue: 'bg-blue-100 text-blue-600',
-                cyan: 'bg-cyan-100 text-cyan-600',
-                orange: 'bg-orange-100 text-orange-600',
-                purple: 'bg-purple-100 text-purple-600'
-              };
-
-              return (
-                <div key={index} className={`p-8 rounded-xl border ${darkMode ? 'bg-slate-700 border-slate-600 hover:border-blue-400' : 'bg-white border-slate-200 hover:border-blue-300'} transition hover:shadow-lg`}>
-                  <div className={`w-14 h-14 rounded-lg flex items-center justify-center mb-4 ${colorClasses[feature.color]}`}>
-                    <Icon size={28} />
+            ].map((item) => (
+              <div
+                key={item.step}
+                className={`rounded-xl border p-6 sm:p-7 flex flex-col justify-between ${
+                  darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between pb-4 border-b border-[#E4E4E0] dark:border-[#262626]">
+                    <span className="font-mono text-2xl font-bold text-[#15803D] dark:text-[#4ADE80]">
+                      {item.step}
+                    </span>
+                    <span className="text-xs font-mono text-[#767670] dark:text-[#6E6E68]">
+                      STEP {item.step}
+                    </span>
                   </div>
-                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-2`}>{feature.title}</h3>
-                  <p className={`${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{feature.description}</p>
+                  <h3 className="text-lg font-bold tracking-tight mt-5">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-[#E4E4E0] dark:border-[#262626] flex items-center gap-2 text-xs font-medium text-[#15803D] dark:text-[#4ADE80]">
+                  <CheckCircle2 size={14} />
+                  <span>{item.meta}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== INTERACTIVE ROI & SHRINKAGE SIMULATOR ===== */}
+      <section id="calculator" className="py-20 sm:py-24 border-b border-[#E4E4E0] dark:border-[#262626]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-5 space-y-4">
+              <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#15803D] dark:text-[#4ADE80]">
+                <span>Margin Recovery Estimator</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em]">
+                See how much profit your shelves lose to silent expiry.
+              </h2>
+              <p className="text-sm sm:text-base text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+                Retail industry benchmarks show independent pharmacies and grocers lose between 2% and 5% of inventory value annually to unnoticed expiration. Adjust the sliders to estimate your store&rsquo;s recoverable margin.
+              </p>
+
+              <div className="pt-2">
+                <Link
+                  to="/expiry-calculator"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-[#15803D] dark:text-[#4ADE80] hover:underline"
+                >
+                  <span>Open Full Shelf-Life &amp; FEFO Date Calculator</span>
+                  <ArrowUpRight size={15} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="lg:col-span-7">
+              <div
+                className={`rounded-xl border p-6 sm:p-8 space-y-6 ${
+                  darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+                }`}
+              >
+                {/* Slider 1 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <label
+                      htmlFor="turnover-slider"
+                      className="text-xs font-semibold uppercase tracking-wider text-[#4A4A46] dark:text-[#A3A39E]"
+                    >
+                      Monthly Perishable Inventory Value
+                    </label>
+                    <span className="tabular-data text-xl font-bold">
+                      ${monthlyTurnover.toLocaleString()}
+                    </span>
+                  </div>
+                  <input
+                    id="turnover-slider"
+                    type="range"
+                    min="2000"
+                    max="100000"
+                    step="1000"
+                    value={monthlyTurnover}
+                    onChange={(e) => setMonthlyTurnover(Number(e.target.value))}
+                    className="w-full h-2 bg-[#E4E4E0] dark:bg-[#262626] rounded-lg appearance-none cursor-pointer accent-[#15803D]"
+                  />
+                  <div className="flex justify-between text-[11px] font-mono text-[#767670]">
+                    <span>$2,000 / mo</span>
+                    <span>$50,000 / mo</span>
+                    <span>$100,000 / mo</span>
+                  </div>
+                </div>
+
+                {/* Slider 2 */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-baseline">
+                    <label
+                      htmlFor="spoilage-slider"
+                      className="text-xs font-semibold uppercase tracking-wider text-[#4A4A46] dark:text-[#A3A39E]"
+                    >
+                      Estimated Unsold Expiry Rate
+                    </label>
+                    <span className="tabular-data text-xl font-bold">
+                      {estimatedSpoilage}%
+                    </span>
+                  </div>
+                  <input
+                    id="spoilage-slider"
+                    type="range"
+                    min="1"
+                    max="8"
+                    step="0.5"
+                    value={estimatedSpoilage}
+                    onChange={(e) => setEstimatedSpoilage(Number(e.target.value))}
+                    className="w-full h-2 bg-[#E4E4E0] dark:bg-[#262626] rounded-lg appearance-none cursor-pointer accent-[#15803D]"
+                  />
+                  <div className="flex justify-between text-[11px] font-mono text-[#767670]">
+                    <span>1.0% (Dry Goods)</span>
+                    <span>3.5% (Retail Avg)</span>
+                    <span>8.0% (Fresh Dairy / Rx)</span>
+                  </div>
+                </div>
+
+                {/* High-Contrast Results Ledger */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div
+                    className={`p-4 rounded-lg border ${
+                      darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#FAF9F6] border-[#E4E4E0]'
+                    }`}
+                  >
+                    <span className="text-[11px] font-medium text-[#767670] block">
+                      Annual Expiry Loss
+                    </span>
+                    <span className="tabular-data text-2xl font-bold text-[#DC2626] dark:text-[#F87171] mt-1 block">
+                      -${annualLoss.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div
+                    className={`p-4 rounded-lg border ${
+                      darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-[#FAF9F6] border-[#E4E4E0]'
+                    }`}
+                  >
+                    <span className="text-[11px] font-medium text-[#767670] block">
+                      Monthly Saved (~78%)
+                    </span>
+                    <span className="tabular-data text-2xl font-bold text-[#111111] dark:text-[#F5F5F3] mt-1 block">
+                      +${monthlyRecovered.toLocaleString()}/mo
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] dark:border-[#19422B] dark:bg-[#0D2116]">
+                    <span className="text-[11px] font-medium text-[#15803D] dark:text-[#4ADE80] block">
+                      Annual Margin Recovered
+                    </span>
+                    <span className="tabular-data text-2xl font-bold text-[#15803D] dark:text-[#4ADE80] mt-1 block">
+                      +${annualRecovered.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                  <p className="text-xs text-[#767670] dark:text-[#A3A39E]">
+                    Based on early 30-day supplier returns &amp; timely 14-day clearance markdowns.
+                  </p>
+                  <Link
+                    to="/register"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-[#15803D] hover:bg-[#14532D] text-white text-xs font-semibold shrink-0 transition-colors"
+                  >
+                    <span>Start Saving Free</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== INDUSTRIES & EDITORIAL GUIDES ===== */}
+      <section id="industries" className="py-20 sm:py-24 border-b border-[#E4E4E0] dark:border-[#262626]">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mb-12">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#15803D] dark:text-[#4ADE80] mb-3">
+              <Store size={14} />
+              <span>Built for Perishable &amp; Regulated Retail</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em]">
+              Tailored workflows for every shelf environment.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            {[
+              {
+                icon: Pill,
+                title: 'Pharmacies & Chemists',
+                tag: 'Rx Lot Control',
+                desc: 'Catch short-dated medicines 30 days early to claim full distributor return credit and maintain strict patient safety.'
+              },
+              {
+                icon: ShoppingCart,
+                title: 'Grocery & Supermarkets',
+                tag: 'Fresh & Packaged',
+                desc: 'Monitor dairy, beverages, infant formula, and packaged goods with automated 7-day clearance markdown prompts.'
+              },
+              {
+                icon: UtensilsCrossed,
+                title: 'Bakeries & Commercial Kitchens',
+                tag: 'Ingredient Prep',
+                desc: 'Track bulk flour, cream, sauces, and perishable prep batches from receiving date to consumption.'
+              },
+              {
+                icon: Package,
+                title: 'Wholesale Distributors',
+                tag: 'Case & Pallet Lots',
+                desc: 'Import supplier CSV manifests in bulk and generate formal expiration audit sheets across multiple storage zones.'
+              }
+            ].map((ind) => {
+              const Icon = ind.icon;
+              return (
+                <div
+                  key={ind.title}
+                  className={`p-6 rounded-xl border flex flex-col justify-between ${
+                    darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between pb-3.5 border-b border-[#E4E4E0] dark:border-[#262626]">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F3F2EE] dark:bg-[#1A1A1A] text-[#15803D] dark:text-[#4ADE80]">
+                        <Icon size={18} />
+                      </div>
+                      <span className="font-mono text-[10px] font-medium px-2 py-0.5 rounded border border-[#E4E4E0] dark:border-[#262626] text-[#767670] dark:text-[#A3A39E]">
+                        {ind.tag}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold tracking-tight mt-4">
+                      {ind.title}
+                    </h3>
+                    <p className="mt-2 text-xs sm:text-sm text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed">
+                      {ind.desc}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Editorial Guides Bar (Preserves SEO Internal Linking) */}
+          <div
+            className={`rounded-xl border p-6 sm:p-8 ${
+              darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-[#F3F2EE] border-[#E4E4E0]'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E4E4E0] dark:border-[#262626]">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider text-[#15803D] dark:text-[#4ADE80]">
+                  Editorial Resource Library
+                </div>
+                <h3 className="text-xl font-bold tracking-tight mt-1">
+                  Guides on FEFO Rotation, Pharmacy Compliance &amp; Shrinkage Reduction
+                </h3>
+              </div>
+              <Link
+                to="/blog"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg border border-[#CFCFC8] dark:border-[#383838] bg-white dark:bg-[#0A0A0A] hover:bg-[#FAF9F6] shrink-0"
+              >
+                <BookOpen size={14} />
+                <span>View All 12 Guides</span>
+                <ArrowRight size={13} />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-6">
+              {FEATURED_GUIDES.map((guide) => (
+                <Link
+                  key={guide.slug}
+                  to={`/blog/${guide.slug}`}
+                  className={`group rounded-lg border p-4 transition-colors ${
+                    darkMode
+                      ? 'bg-[#0A0A0A] border-[#262626] hover:border-[#383838]'
+                      : 'bg-white border-[#E4E4E0] hover:border-[#CFCFC8]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-[11px] font-mono text-[#767670] mb-2">
+                    <span className="text-[#15803D] dark:text-[#4ADE80] font-medium">
+                      {guide.tag}
+                    </span>
+                    <span>{guide.readTime}</span>
+                  </div>
+                  <h4 className="text-sm font-bold leading-snug group-hover:text-[#15803D] dark:group-hover:text-[#4ADE80] transition-colors">
+                    {guide.title}
+                  </h4>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FREQUENTLY ASKED QUESTIONS ===== */}
+      <section id="faq" className="py-20 sm:py-24 border-b border-[#E4E4E0] dark:border-[#262626]">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mb-12">
+            <div className="text-xs font-semibold uppercase tracking-wider text-[#15803D] dark:text-[#4ADE80] mb-2">
+              Common Questions
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.025em]">
+              Frequently Asked Questions
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-[#4A4A46] dark:text-[#A3A39E]">
+              Everything you need to know about WhatsApp setup, data privacy, and how Inventa works.
+            </p>
+          </div>
+
+          <div className="space-y-3" itemScope itemType="https://schema.org/FAQPage">
+            {commonFAQs.map((faq, index) => {
+              const isOpen = activeFaqIndex === index;
+              return (
+                <div
+                  key={index}
+                  className={`border rounded-xl overflow-hidden transition-colors ${
+                    darkMode ? 'bg-[#141414] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+                  }`}
+                  itemProp="mainEntity"
+                  itemScope
+                  itemType="https://schema.org/Question"
+                >
+                  <button
+                    onClick={() => setActiveFaqIndex(isOpen ? null : index)}
+                    className="flex w-full items-center justify-between p-5 text-left focus:outline-none cursor-pointer"
+                    aria-expanded={isOpen}
+                  >
+                    <span className="text-sm sm:text-base font-semibold pr-4" itemProp="name">
+                      {faq.question}
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-md p-1 transition-transform duration-200 ${
+                        isOpen ? 'rotate-180 text-[#15803D] dark:text-[#4ADE80]' : 'text-[#767670]'
+                      }`}
+                    >
+                      <ChevronDown size={16} />
+                    </span>
+                  </button>
+
+                  <div
+                    className={`accordion-content ${isOpen ? 'open' : ''}`}
+                    itemProp="acceptedAnswer"
+                    itemScope
+                    itemType="https://schema.org/Answer"
+                  >
+                    <div
+                      className="px-5 pb-5 text-sm text-[#4A4A46] dark:text-[#A3A39E] leading-relaxed border-t border-[#E4E4E0] dark:border-[#262626] pt-3.5"
+                      itemProp="text"
+                    >
+                      {faq.answer}
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -220,354 +1275,179 @@ const Landing = ({ onGetStarted }) => {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section id="benefits" className={`py-20 lg:py-28 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Text */}
-            <div>
-              <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-6`}>
-                Real Impact on Your Business
-              </h2>
-              <p className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'} mb-8`}>
-                See measurable results from day one. Our users report significant improvements in operational efficiency.
-              </p>
-
-              <div className="space-y-4">
-                {[
-                  {
-                    icon: Leaf,
-                    title: 'Reduce Waste by 40%',
-                    description: 'Cut food waste and product losses through better inventory visibility'
-                  },
-                  {
-                    icon: TrendingUp,
-                    title: 'Save Up to $5,000/Month',
-                    description: 'Recover lost revenue by preventing stock spoilage and markdown losses'
-                  },
-                  {
-                    icon: Flame,
-                    title: 'Boost Productivity',
-                    description: 'Automate manual tracking. Your team focuses on growth, not inventory.'
-                  },
-                  {
-                    icon: Shield,
-                    title: 'Stay Compliant',
-                    description: 'Maintain audit trails and compliance with food safety regulations'
-                  }
-                ].map((benefit, index) => {
-                  const Icon = benefit.icon;
-                  return (
-                    <div key={index} className="flex space-x-4">
-                      <div className="flex-shrink-0">
-                        <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                          <Icon className="h-6 w-6 text-blue-600" />
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{benefit.title}</h3>
-                        <p className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{benefit.description}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+      {/* ===== HIGH-CONTRAST EDITORIAL CTA SECTION ===== */}
+      <section className="py-20 sm:py-24 border-b border-[#E4E4E0] dark:border-[#262626]">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl bg-[#111111] dark:bg-[#141414] dark:border dark:border-[#262626] text-[#FAF9F6] p-8 sm:p-14 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1 text-xs font-mono text-[#4ADE80] mb-5">
+              <span>Ready in under 2 minutes · No credit card required</span>
             </div>
-
-            {/* Right Side - Visual */}
-            <div className="relative">
-              <div className="bg-gradient-to-br from-blue-400 to-cyan-500 rounded-2xl h-96 flex items-center justify-center shadow-2xl">
-                <div className="text-center text-white">
-                  <div className="text-5xl font-bold mb-2">40%</div>
-                  <div className="text-lg opacity-90">Waste Reduction</div>
-                  <div className="mt-6 text-sm opacity-75">Average across all users</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className={`py-20 lg:py-28 ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-4`}>
-              How It Works
+            <h2 className="text-3xl sm:text-5xl font-bold tracking-[-0.03em] max-w-2xl mx-auto leading-tight">
+              Protect your shelf margin{' '}
+              <span className="font-editorial italic font-normal text-[#4ADE80]">
+                starting today.
+              </span>
             </h2>
-            <p className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'} max-w-2xl mx-auto`}>
-              Get started in minutes with our simple four-step process
+            <p className="mt-4 text-sm sm:text-base text-[#A3A39E] max-w-xl mx-auto leading-relaxed">
+              Connect your store&rsquo;s WhatsApp number, snap your first product label, and let Inventa handle expiry tracking and daily alerts automatically.
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { step: '1', title: 'Sign Up', description: 'Create your free account in seconds and set up your inventory.' },
-              { step: '2', title: 'Scan Barcodes', description: 'Use your phone camera to scan product barcodes or add items manually.' },
-              { step: '3', title: 'Get Alerts', description: 'Receive smart reminders when products are about to expire.' },
-              { step: '4', title: 'Track & Save', description: 'Monitor waste reduction and see savings grow with analytics dashboard.' }
-            ].map((item, index) => (
-              <div key={index} className="relative">
-                <div className={`p-8 rounded-xl border ${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
-                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-3`}>{item.title}</h3>
-                  <p className={`${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{item.description}</p>
-                </div>
-                {index < 3 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-600 to-transparent" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className={`py-20 lg:py-28 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-4`}>
-              Loved by Shopkeepers
-            </h2>
-            <p className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'} max-w-2xl mx-auto`}>
-              Hear from business owners who've transformed their inventory management
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                name: 'Rajesh Kumar',
-                role: 'Grocery Store Owner',
-                image: 'R',
-                quote: 'Implemented ExpiryTracker in my store and immediately started saving money. Waste reduced by 35% in the first month!',
-                color: 'bg-blue-100'
-              },
-              {
-                name: 'Priya Sharma',
-                role: 'Pharmacy Manager',
-                image: 'P',
-                quote: 'The barcode scanning is so convenient. My team loves the smart reminders - no more expired medicines on the shelf.',
-                color: 'bg-cyan-100'
-              },
-              {
-                name: 'Vikram Singh',
-                role: 'Restaurant Owner',
-                image: 'V',
-                quote: 'Best investment for our inventory! The analytics show exactly where we lose money. Game-changer for our business.',
-                color: 'bg-purple-100'
-              }
-            ].map((testimonial, index) => (
-              <div key={index} className={`p-8 rounded-xl border ${darkMode ? 'bg-slate-800 border-slate-700 hover:shadow-lg' : 'bg-white border-slate-200 hover:shadow-lg'} transition`}>
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg text-slate-900 ${testimonial.color}`}>
-                    {testimonial.image}
-                  </div>
-                  <div>
-                    <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{testimonial.name}</h3>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{testimonial.role}</p>
-                  </div>
-                </div>
-                <div className="flex mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-yellow-400">★</span>
-                  ))}
-                </div>
-                <p className={`${darkMode ? 'text-slate-300' : 'text-slate-700'} italic`}>"{testimonial.quote}"</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className={`py-20 lg:py-28 ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'} mb-4`}>
-              Simple, Transparent Pricing
-            </h2>
-            <p className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'} max-w-2xl mx-auto`}>
-              Choose the plan that fits your business needs
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                name: 'Free',
-                price: '$0',
-                period: 'Forever',
-                description: 'Perfect for getting started',
-                features: ['Up to 50 products', 'Basic barcode scanning', 'Email reminders', 'Manual reports', 'Community support'],
-                cta: 'Get Started',
-                highlighted: false
-              },
-              {
-                name: 'Pro',
-                price: '$299',
-                period: 'Per month',
-                description: 'For growing businesses',
-                features: ['Unlimited products', 'Advanced barcode scanning', 'SMS & email reminders', 'AI-powered analytics', 'Habit streaks', 'Priority support', 'API access'],
-                cta: 'Start Free Trial',
-                highlighted: true
-              },
-              {
-                name: 'Business',
-                price: '$999',
-                period: 'Per month',
-                description: 'For large enterprises',
-                features: ['Unlimited products & locations', 'Advanced barcode scanning', 'SMS, Email & WhatsApp', 'Custom analytics', 'Team management', 'Dedicated support', 'Custom integrations'],
-                cta: 'Contact Sales',
-                highlighted: false
-              }
-            ].map((plan, index) => (
-              <div
-                key={index}
-                className={`relative rounded-xl transition transform hover:scale-105 ${
-                  plan.highlighted
-                    ? 'bg-gradient-to-br from-blue-600 to-cyan-500 shadow-2xl ring-2 ring-blue-300 md:scale-105'
-                    : darkMode ? 'bg-slate-700 border border-slate-600' : 'bg-white border border-slate-200'
-                }`}
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+              <Link
+                to="/register"
+                className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-lg bg-[#15803D] hover:bg-[#16A34A] text-white text-sm font-semibold transition-all active:translate-y-[1px]"
               >
-                {plan.highlighted && (
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <span className="bg-yellow-400 text-slate-900 px-4 py-1 rounded-full text-sm font-bold">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
+                <span>Create Free Account</span>
+                <ArrowRight size={15} />
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center h-12 px-6 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white text-sm font-semibold transition-all"
+              >
+                Sign In to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                <div className={`p-8 ${plan.highlighted ? 'text-white' : ''}`}>
-                  <h3 className={`text-2xl font-bold mb-2 ${plan.highlighted ? 'text-white' : darkMode ? 'text-white' : 'text-slate-900'}`}>
-                    {plan.name}
-                  </h3>
-                  <p className={`text-sm mb-6 ${plan.highlighted ? 'text-white/80' : darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                    {plan.description}
-                  </p>
+      {/* ===== ARCHITECTURAL FOOTER ===== */}
+      <footer
+        className={`py-14 text-xs ${
+          darkMode ? 'bg-[#0A0A0A] text-[#A3A39E]' : 'bg-[#FAF9F6] text-[#4A4A46]'
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-[#E4E4E0] dark:border-[#262626]">
+            {/* Col 1: Brand */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#111111] dark:bg-[#F5F5F3] text-[#FAF9F6] dark:text-[#0A0A0A]">
+                  <Boxes size={15} />
+                </div>
+                <span className="font-bold text-sm tracking-tight text-[#111111] dark:text-[#F5F5F3]">
+                  Inventa
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-[#767670] dark:text-[#6E6E68] max-w-xs">
+                WhatsApp-powered expiry date tracking and FEFO stock rotation for pharmacies, grocery stores, and independent retailers.
+              </p>
+              <div className="pt-1 font-mono text-[11px] text-[#767670]">
+                Support:{' '}
+                <a
+                  href="mailto:support@inventa.app"
+                  className="text-[#15803D] dark:text-[#4ADE80] hover:underline"
+                >
+                  support@inventa.app
+                </a>
+              </div>
+            </div>
 
-                  <div className="mb-6">
-                    <span className={`text-4xl font-bold ${plan.highlighted ? 'text-white' : darkMode ? 'text-white' : 'text-slate-900'}`}>
-                      {plan.price}
-                    </span>
-                    <span className={`text-sm ml-2 ${plan.highlighted ? 'text-white/80' : darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                      {plan.period}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={onGetStarted}
-                    className={`w-full py-3 rounded-lg font-semibold mb-8 transition ${
-                      plan.highlighted
-                        ? 'bg-white text-blue-600 hover:bg-slate-50'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    {plan.cta}
+            {/* Col 2: Product */}
+            <div className="space-y-2.5">
+              <div className="font-semibold uppercase tracking-wider text-[11px] text-[#111111] dark:text-[#F5F5F3]">
+                Platform
+              </div>
+              <ul className="space-y-2">
+                <li>
+                  <button onClick={() => scrollToSection('features')} className="hover:underline cursor-pointer">
+                    Features &amp; OCR
                   </button>
-
-                  <div className={`space-y-4 ${plan.highlighted ? 'text-white' : darkMode && !plan.highlighted ? 'text-slate-300' : ''}`}>
-                    {plan.features.map((feature, i) => (
-                      <div key={i} className="flex items-center space-x-3">
-                        <CheckCircle size={20} className={plan.highlighted ? 'text-white' : darkMode && !plan.highlighted ? 'text-blue-400' : 'text-blue-600'} />
-                        <span className={plan.highlighted ? 'text-white/90' : darkMode && !plan.highlighted ? 'text-slate-300' : 'text-slate-700'}>
-                          {feature}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <p className={`${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              All plans include a 14-day free trial. No credit card required.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className={`py-20 lg:py-28 ${darkMode ? 'bg-gradient-to-r from-slate-700 to-slate-800' : 'bg-gradient-to-r from-blue-600 to-cyan-500'}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-white'}`}>
-            Ready to Transform Your Inventory?
-          </h2>
-          <p className={`text-lg ${darkMode ? 'text-slate-300' : 'opacity-90'} mb-8 max-w-2xl mx-auto`}>
-            Join thousands of successful businesses reducing waste and saving money with ExpiryTracker.
-          </p>
-          <button
-            onClick={onGetStarted}
-            className={`inline-flex items-center space-x-2 px-8 py-4 ${darkMode ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-white text-blue-600 hover:bg-slate-50'} rounded-lg font-semibold transition transform hover:scale-105`}
-          >
-            <span>Start Your Free Trial</span>
-            <ArrowRight size={20} />
-          </button>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className={`${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-900 text-slate-300'} py-12`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            {/* Brand */}
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold">E</span>
-                </div>
-                <span className={`font-bold ${darkMode ? 'text-white' : 'text-white'} text-lg`}>Inventa</span>
-              </div>
-              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-400'}`}>
-                Smart inventory management for modern businesses.
-              </p>
-            </div>
-
-            {/* Product */}
-            <div>
-              <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-white'} mb-4`}>Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><button onClick={() => scrollToSection('features')} className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Features</button></li>
-                <li><button onClick={() => scrollToSection('pricing')} className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Pricing</button></li>
-                <li><a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Security</a></li>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('how-it-works')} className="hover:underline cursor-pointer">
+                    How It Works
+                  </button>
+                </li>
+                <li>
+                  <Link to="/expiry-calculator" className="hover:underline">
+                    Shelf-Life Calculator
+                  </Link>
+                </li>
+                <li>
+                  <button onClick={() => scrollToSection('industries')} className="hover:underline cursor-pointer">
+                    Supported Industries
+                  </button>
+                </li>
+                <li>
+                  <Link to="/blog" className="hover:underline">
+                    Inventory Guides &amp; Blog
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            {/* Company */}
-            <div>
-              <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-white'} mb-4`}>Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>About</a></li>
-                <li><a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Blog</a></li>
-                <li><a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Careers</a></li>
+            {/* Col 3: Company & Legal */}
+            <div className="space-y-2.5">
+              <div className="font-semibold uppercase tracking-wider text-[11px] text-[#111111] dark:text-[#F5F5F3]">
+                Company &amp; Legal
+              </div>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/about" className="hover:underline">
+                    About Inventa
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="hover:underline">
+                    Contact Support
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/privacy-policy" className="hover:underline">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms-of-service" className="hover:underline">
+                    Terms of Service
+                  </Link>
+                </li>
               </ul>
             </div>
 
-            {/* Legal */}
-            <div>
-              <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-white'} mb-4`}>Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Privacy Policy</a></li>
-                <li><a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Terms of Service</a></li>
-                <li><a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Contact</a></li>
+            {/* Col 4: Account Access */}
+            <div className="space-y-2.5">
+              <div className="font-semibold uppercase tracking-wider text-[11px] text-[#111111] dark:text-[#F5F5F3]">
+                Store Access
+              </div>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/login" className="hover:underline">
+                    Sign In to Workspace
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/register" className="hover:underline">
+                    Register Store Account
+                  </Link>
+                </li>
               </ul>
+              <div className="pt-2 flex items-center gap-2 text-[11px] font-mono text-[#15803D] dark:text-[#4ADE80]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#15803D] dark:bg-[#4ADE80]" />
+                <span>WhatsApp Gateway Operational</span>
+              </div>
             </div>
           </div>
 
-          <div className={`border-t ${darkMode ? 'border-slate-700' : 'border-slate-700'} pt-8`}>
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-400'}`}>
-                © 2026 ExpiryTracker. All rights reserved.
-              </p>
-              <div className="flex space-x-6 mt-4 md:mt-0 text-sm">
-                <a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Twitter</a>
-                <a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>LinkedIn</a>
-                <a href="#" className={`${darkMode ? 'text-slate-300 hover:text-white' : 'hover:text-white'} transition`}>Facebook</a>
-              </div>
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#767670]">
+            <div>&copy; {new Date().getFullYear()} Inventa. All rights reserved.</div>
+            <div className="flex items-center gap-4">
+              <Link to="/about" className="hover:underline">
+                About
+              </Link>
+              <span>·</span>
+              <Link to="/contact" className="hover:underline">
+                Contact
+              </Link>
+              <span>·</span>
+              <Link to="/privacy-policy" className="hover:underline">
+                Privacy
+              </Link>
+              <span>·</span>
+              <Link to="/terms-of-service" className="hover:underline">
+                Terms
+              </Link>
             </div>
           </div>
         </div>
