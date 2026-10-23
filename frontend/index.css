@@ -1,0 +1,113 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, Cambria, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-stitch-bg: var(--stitch-bg);
+  --color-stitch-surface: var(--stitch-surface);
+  --color-stitch-sunken: var(--stitch-sunken);
+  --color-stitch-hover: var(--stitch-hover);
+  --color-stitch-border: var(--stitch-border);
+  --color-stitch-border-strong: var(--stitch-border-strong);
+  --color-stitch-ink: var(--stitch-ink);
+  --color-stitch-ink-secondary: var(--stitch-ink-secondary);
+  --color-stitch-ink-muted: var(--stitch-ink-muted);
+  --color-stitch-accent: var(--stitch-accent);
+  --color-stitch-accent-hover: var(--stitch-accent-hover);
+  --color-stitch-accent-subtle: var(--stitch-accent-subtle);
+  --color-stitch-accent-border: var(--stitch-accent-border);
+}
+
+:root {
+  /* Google Stitch Design System — Light Mode (Warm Editorial Alabaster & Forest Ink) */
+  --stitch-bg: #FAF9F6;
+  --stitch-surface: #FFFFFF;
+  --stitch-sunken: #F3F2EE;
+  --stitch-hover: #EAE8E1;
+  --stitch-border: #E4E4E0;
+  --stitch-border-strong: #CFCFC8;
+  --stitch-ink: #111111;
+  --stitch-ink-secondary: #4A4A46;
+  --stitch-ink-muted: #767670;
+
+  /* Intentional Accent: Deep Forest Green (Freshness, Pharmacy & WhatsApp Native) */
+  --stitch-accent: #15803D;
+  --stitch-accent-hover: #14532D;
+  --stitch-accent-subtle: #F0FDF4;
+  --stitch-accent-border: #BBF7D0;
+}
+
+html.dark, .dark {
+  /* Google Stitch Design System — Dark Mode (True Carbon Obsidian & Crisp Hairline) */
+  --stitch-bg: #0A0A0A;
+  --stitch-surface: #141414;
+  --stitch-sunken: #1A1A1A;
+  --stitch-hover: #222222;
+  --stitch-border: #262626;
+  --stitch-border-strong: #383838;
+  --stitch-ink: #F5F5F3;
+  --stitch-ink-secondary: #A3A39E;
+  --stitch-ink-muted: #6E6E68;
+
+  --stitch-accent: #22C55E;
+  --stitch-accent-hover: #16A34A;
+  --stitch-accent-subtle: #0D2116;
+  --stitch-accent-border: #19422B;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--stitch-bg);
+    color: var(--stitch-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    selection-background-color: #DCFCE7;
+    selection-color: #14532D;
+  }
+
+  ::selection {
+    background-color: #DCFCE7;
+    color: #14532D;
+  }
+
+  .dark ::selection {
+    background-color: #14532D;
+    color: #DCFCE7;
+  }
+}
+
+/* Tabular numerals for inventory counts, batch numbers, dates, and currency */
+.tabular-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Editorial Serif Display */
+.font-editorial {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+}
+
+/* Accordion smooth transitions */
+.accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease-out;
+}
+
+.accordion-content.open {
+  grid-template-rows: 1fr;
+}
+
+.accordion-content > div {
+  overflow: hidden;
+}

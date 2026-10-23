@@ -1,46 +1,98 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
+import { trapFocus } from '../../utils/keyboardNavigation';
 
-const Sheet = ({ isOpen, onClose, children, title, darkMode = false }) => {
-  // Prevent body scroll when open
+const Sheet = ({ isOpen, onClose, children, title, darkMode = false, fullScreen = false }) => {
+  const sheetRef = useRef(null);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+
+      if (sheetRef.current) {
+        sheetRef.current.focus({ preventScroll: true });
+      }
+
+      const cleanupTrapFocus = trapFocus(sheetRef.current);
+
+      const handleEsc = (e) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      document.addEventListener('keydown', handleEsc);
+
+      return () => {
+        document.body.style.overflow = 'unset';
+        cleanupTrapFocus();
+        document.removeEventListener('keydown', handleEsc);
+      };
     } else {
       document.body.style.overflow = 'unset';
     }
+
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
-  // Detect dark mode from document class
-  const isDarkMode = darkMode || document.documentElement.classList.contains('dark');
+  const isDarkMode = darkMode || (typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
+
+  const handleBackdropClick = useCallback((e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  }, [onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div
+      className="fixed inset-0 z-50 flex justify-end"
+      onClick={handleBackdropClick}
+    >
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300" 
-        onClick={onClose}
+      <div
+        className="fixed inset-0 bg-black/50 transition-opacity duration-200"
         aria-hidden="true"
       />
-      
+
       {/* Panel */}
-      <div className={`relative w-full max-w-md h-full shadow-2xl transform transition-transform duration-300 ease-in-out border-l flex flex-col animate-in slide-in-from-right duration-300 ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-        <div className={`flex items-center justify-between p-6 border-b ${isDarkMode ? 'border-slate-700' : 'border-slate-100'}`}>
-          {title && <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h2>}
-          <button 
+      <div
+        ref={sheetRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? 'sheet-title' : undefined}
+        className={`relative h-full shadow-2xl transform transition-transform duration-200 ease-in-out border-l flex flex-col ${
+          isDarkMode
+            ? 'bg-[#141414] border-[#262626] text-[#F5F5F3]'
+            : 'bg-[#FAF9F6] border-[#E4E4E0] text-[#111111]'
+        } ${fullScreen ? 'w-full' : 'w-full sm:max-w-md'}`}
+      >
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${
+          isDarkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+        }`}>
+          {title && (
+            <h2 id="sheet-title" className={`text-base font-bold tracking-tight ${isDarkMode ? 'text-[#F5F5F3]' : 'text-[#111111]'}`}>
+              {title}
+            </h2>
+          )}
+          <button
             onClick={onClose}
-            className={`rounded-full p-2 transition-colors ${isDarkMode ? 'text-slate-400 hover:bg-slate-700 hover:text-slate-200' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'}`}
+            className={`rounded-md p-1.5 border transition-colors ${
+              isDarkMode
+                ? 'border-[#262626] text-[#A3A39E] hover:bg-[#1A1A1A] hover:text-white'
+                : 'border-[#E4E4E0] text-[#4A4A46] hover:bg-[#F3F2EE] hover:text-[#111111]'
+            }`}
+            aria-label="Close panel"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
-        
-        <div className={`flex-1 overflow-y-auto p-6 ${isDarkMode ? 'scrollbar-dark' : 'scrollbar-light'}`}>
+
+        <div className="flex-1 overflow-y-auto p-6 hide-scrollbar">
           {children}
         </div>
       </div>

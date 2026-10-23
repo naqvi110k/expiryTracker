@@ -1,0 +1,22 @@
+# Inventa - robots.txt
+# This file tells search engines which pages to crawl and which to avoid
+
+# Allow all search engines to access public pages
+User-agent: *
+Allow: /
+
+# Disallow private/authenticated routes
+# /dashboard - protected, requires auth
+# /analytics - protected, requires auth (was missing, wasted crawl budget)
+# /api/ - backend API, not for indexing
+Disallow: /dashboard
+Disallow: /analytics
+Disallow: /api/
+
+# Disallow admin and development files
+Disallow: /admin
+Disallow: /*.env
+Disallow: /*.config.js
+
+# Sitemap location
+Sitemap: https://expiry-tracker.live/sitemap.xml
