@@ -1,28 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Inventa Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-<script type="importmap">
-{
-  "imports": {
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react/": "https://esm.sh/react@^19.2.3/"
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z48R2T7VWL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-Z48R2T7VWL');
+  </script>
+  <!-- Basic Meta Tags -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="msvalidate.01" content="57D5834223993FC47D85F143EB377649" />
+
+  <!-- SEO Meta Tags -->
+  <title data-react-helmet="true">Inventa | Free WhatsApp Inventory & Expiry Tracker</title>
+  <meta data-react-helmet="true" name="description"
+    content="Stop losing money on expired inventory. Track stock with AI by sending product photos via WhatsApp. Get daily alerts and reports. 100% free, no app required." />
+  <meta data-react-helmet="true" name="keywords"
+    content="free small business inventory tracker, retail expiry date tracking software, pharmacy expiry date tracking software, grocery store expiry tracker, supermarket shelf life tracker, grocery store waste reduction software, FEFO inventory management pharmacy, retail inventory loss prevention, prevent stock write-offs retail, reduce food waste in supermarkets, free inventory tracker, prevent expired products, stop inventory waste, free stock management app, WhatsApp inventory alerts, AI product expiry tracker, shelf life tracking, batch number tracking, FIFO stock rotation app, expiry date app, food expiry tracker app, expiration date reminder app, medicine expiry reminder app, expiry date barcode scanner, inventory management software, perishable goods inventory software, automated shelf-life monitoring software, best before date app, inventory tracking for small business, pantry inventory app with expiry dates, barcode scanner app with expiration alerts, prevent expired stock inventory software, inventory software to track shelf life, manage perishable inventory for small business, expiry date management, food inventory management with notifications, expiry date tracking for bakeries, inventory tracking for pharmaceutical compliance, FEFO vs FIFO inventory software, expiration date tracker, expiration date reminder, expiration date management app, food expiration date tracker, expiration date tracking software, product expiration management system, small business inventory system for fresh produce, barcode scanner app, barcode inventory tracking, barcode expiry scanner, WhatsApp inventory tracker, WhatsApp stock manager, AI inventory management, AI stock management, food waste tracker, prevent stock wastage, whatsapp expiry date alerts, product expiration notifications whatsapp, set up whatsapp expiry alerts, how to track expiry dates free, whatsapp inventory management, manage stock on whatsapp, expired inventory losses, reduce product waste small business, food tracking, best free inventory apps, no cost stock tracker, free inventory management app, expiry tracker vs excel, inventory spreadsheet alternative, best tools for food pantry inventory, ai inventory tracking, photo stock management, ai photo inventory tracking, inventa review for small retail, inventa app review, whatsapp inventory tracker review, expiry date tracker free, inventory expiration tracking" />
+  <meta data-react-helmet="true" name="author" content="Inventa - Smart Inventory Solutions" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="googlebot" content="index, follow" />
+  <meta name="google-site-verification" content="a8BqL2UA2KksmAkBNrA0_h5HKW5mnDEY-L7f9l6S3Kw" />
+  <link data-react-helmet="true" rel="canonical" href="https://expiry-tracker.live/" />
+
+  <!-- Theme & Mobile -->
+  <meta name="theme-color" content="#FAF9F5" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#090A0B" media="(prefers-color-scheme: dark)" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Inventa" />
+
+  <!-- Open Graph / Facebook -->
+  <meta data-react-helmet="true" property="og:type" content="website" />
+  <meta data-react-helmet="true" property="og:url" content="https://expiry-tracker.live/" />
+  <meta data-react-helmet="true" property="og:site_name" content="Inventa" />
+  <meta data-react-helmet="true" property="og:title" content="Inventa | Free WhatsApp Inventory & Expiry Tracker" />
+  <meta data-react-helmet="true" property="og:description"
+    content="Stop losing money on expired inventory. Track stock with AI by sending product photos via WhatsApp. Get daily alerts and reports. 100% free, no app required." />
+  <meta data-react-helmet="true" property="og:image" content="https://expiry-tracker.live/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Inventa Inventory Management Dashboard" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta data-react-helmet="true" name="twitter:url" content="https://expiry-tracker.live/" />
+  <meta data-react-helmet="true" name="twitter:title" content="Inventa | Free WhatsApp Inventory & Expiry Tracker" />
+  <meta data-react-helmet="true" name="twitter:description"
+    content="Stop losing money on expired inventory. Track stock with AI by sending product photos via WhatsApp. Get daily alerts and reports. 100% free, no app required." />
+  <meta data-react-helmet="true" name="twitter:image" content="https://expiry-tracker.live/twitter-image.png" />
+  <meta property="twitter:image:alt" content="Inventa Inventory Management System" />
+  <meta property="twitter:creator" content="@inventa" />
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/Untitled design.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/Untitled design.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/Untitled design.png" />
+
+  <!-- Manifest for PWA -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Resource Hints for Performance -->
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4612791431644995"
+     crossorigin="anonymous"></script>
+
+
+  <!-- Google Stitch Fonts: Instrument Serif (Editorial Display), Plus Jakarta Sans (UI Body), JetBrains Mono (Technical/Metadata) -->
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" />
+  </noscript>
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Outfit:wght@100..900&display=swap" />
+  </noscript>
+
+  <!-- Structured Data - Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Inventa",
+    "applicationCategory": "BusinessApplication",
+    "applicationSubCategory": "Inventory Management Software",
+    "operatingSystem": "Web, Android, iOS",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "Free AI-powered inventory management software and expiry date app for small businesses. Track product expiry and expiration dates, receive automated WhatsApp alerts, scan barcodes, manage perishable goods inventory, and generate PDF reports — all at zero cost.",
+    "featureList": [
+      "Product expiry and expiration date tracking",
+      "Automated WhatsApp expiry notifications and expiration date reminders",
+      "AI-powered product recognition from photos",
+      "Expiry date barcode scanner with auto-fill",
+      "PDF report generation for inventory audits",
+      "Real-time inventory dashboard",
+      "FEFO and FIFO inventory management",
+      "Pharmacy expiry date tracking and pharmaceutical compliance",
+      "Grocery store and supermarket shelf life tracking",
+      "Bakery and restaurant perishable goods management",
+      "Bulk CSV and Excel product import",
+      "Best before date monitoring and alerts",
+      "Food waste reduction through automated shelf-life monitoring"
+    ],
+    "author": {
+      "@type": "Organization",
+      "name": "Inventa",
+      "url": "https://expiry-tracker.live"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "127"
+    }
   }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Inventa",
+    "url": "https://expiry-tracker.live",
+    "logo": "https://expiry-tracker.live/Untitled design.png",
+    "description": "Smart inventory management solutions for small businesses",
+    "sameAs": [
+      "https://facebook.com/inventa",
+      "https://twitter.com/inventa",
+      "https://linkedin.com/company/inventa"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "Customer Support",
+      "email": "support@inventa.app"
+    }
+  }
+  </script>
+
+  <!-- FAQ Schema for Rich Snippets -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is Inventa really free to use?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! Inventa is a 100% free expiry date app and inventory management software for small businesses. You get unlimited product tracking, WhatsApp expiry alerts, AI-powered product recognition, barcode scanning, and PDF reports at no cost."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do WhatsApp expiry alerts work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Inventa automatically sends WhatsApp messages when your products are about to expire. This food inventory management with notifications feature delivers expiration date reminders 7 days, 3 days, and 1 day before the expiry date, so you never miss a deadline and can take action to prevent losses."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use Inventa for my pharmacy or grocery store?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely! Inventa is a pharmacy expiry date tracking software and grocery store expiry tracker. It works for any business dealing with perishable products — pharmacies, grocery stores, restaurants, bakeries, medical stores, and more. It supports inventory tracking for pharmaceutical compliance and FEFO inventory management."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does the AI product recognition work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Simply take a photo of your product or its packaging. Our AI-powered automated shelf-life monitoring software extracts the product name, expiry date, batch number, and category. You can review and edit the information before saving it to your inventory."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need technical knowledge to use Inventa?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not at all! Inventa is designed to be simple and user-friendly. If you can use WhatsApp, you can use Inventa. Just sign up, add your products, and start receiving alerts. No technical skills required."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Inventa have a barcode scanner for expiry dates?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! Inventa includes a built-in expiry date barcode scanner. Scan any product to auto-fill details like name, batch number, and category. It works as a barcode scanner app with expiration alerts, automatically tracking scanned items and sending reminders before they expire."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How can Inventa help reduce food waste?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Inventa helps reduce food waste in supermarkets and grocery stores by providing daily expiration date reminders, FEFO inventory management, and real-time dashboards. This perishable goods inventory software helps you manage stock rotation, take timely markdowns, and prevent stock write-offs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is FEFO vs FIFO inventory management?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "FIFO (First-In, First-Out) sells the oldest stock first, while FEFO (First-Expired, First-Out) sells the product with the nearest expiry date first. For perishable goods, FEFO is superior. Inventa supports both FEFO vs FIFO inventory software methods, giving you complete control over your inventory rotation."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use Inventa for my bakery or restaurant?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely! Inventa offers purpose-built expiry date tracking for bakeries, restaurants, and food service businesses. Track best before dates on ingredients, manage your inventory system for fresh produce, and receive automated food inventory management with notifications."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Inventa work as an expiration date tracker for US users?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! Inventa works globally as both an expiry date tracker and expiration date tracker. Whether you call it an expiration date reminder app, expiration date management app, or food expiration date tracker — Inventa handles it all with automated alerts, barcode scanning, and AI-powered product recognition."
+        }
+      }
+    ]
+  }
+  </script>
+  <script>(function(s){s.dataset.zone='11217694',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 </head>
-  <body class="dark:bg-slate-900 dark:text-slate-100">
-    <div id="root"></div>
-    <script type="module" src="/index.jsx"></script>
-  </body>
+
+<body>
+
+  <div id="root">
+    <h1>Stop losing money on expired stock — the free expiry date tracker with WhatsApp alerts</h1>
+  </div>
+  <script type="module" src="/index.jsx"></script>
+
+</body>
+
 </html>
