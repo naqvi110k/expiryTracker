@@ -3,20 +3,24 @@ const dotenv = require("dotenv");
 dotenv.config();
 const twilio = require('twilio');
 
-const sendTelegramMessage = async (message) => {
+const sendTelegramMessage = async (message, chatId) => {
   // Validate credentials before sending
   if (!process.env.TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is not defined in .env file");
   }
-  if (!process.env.TELEGRAM_CHAT_ID) {
-    throw new Error("TELEGRAM_CHAT_ID is not defined in .env file");
+  
+  // If no specific chatId provided, fall back to global chat ID
+  const targetChatId = chatId || process.env.TELEGRAM_CHAT_ID;
+  
+  if (!targetChatId) {
+    throw new Error("No chat ID provided and TELEGRAM_CHAT_ID is not defined in .env file");
   }
 
   try {
     const response = await axios.post(
       `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
       {
-        chat_id: process.env.TELEGRAM_CHAT_ID,
+        chat_id: targetChatId,
         text: message
       },
       { timeout: 10000 } // 10 second timeout
@@ -33,10 +37,16 @@ const sendTelegramMessage = async (message) => {
 };
 
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+let _client = null;
+function getTwilioClient() {
+  if (!_client) {
+    _client = twilio(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
+  }
+  return _client;
+}
 
 async function sendWhatsApp(message, toPhoneNumber) {
   try {
@@ -46,9 +56,10 @@ async function sendWhatsApp(message, toPhoneNumber) {
       throw new Error('No destination WhatsApp number provided and SHOPKEEPER_WHATSAPP_TO is not set');
     }
 
+    const client = getTwilioClient();
     const response = await client.messages.create({
-      from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`, 
-      to: `whatsapp:${to}`,                           // whatsapp:+92333xxxxxx
+      from: `whatsapp:${process.env.TWILIO_WHATSAPP_FROM}`,
+      to: `whatsapp:${to}`,
       body: message
     });
 
@@ -56,7 +67,7 @@ async function sendWhatsApp(message, toPhoneNumber) {
     return response;
   } catch (error) {
     console.error("❌ WhatsApp error:", error.message);
-    throw error; // optional: lets caller know it failed
+    throw error;
   }
 }
 
