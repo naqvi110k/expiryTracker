@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Button from './ui/Button';
 import Input from './ui/Input';
+import ErrorMessage from './ui/ErrorMessage';
 import { getProfile, updateProfile, deleteAccount, changePassword } from '../services/userService';
-import { getCurrentUser, logout } from '../services/authService';
+import { logout } from '../services/authService';
 import { getProducts } from '../services/productService';
 import {
   User,
@@ -12,17 +13,11 @@ import {
   Package,
   Shield,
   Trash2,
-  Edit3,
-  Save,
-  X,
-  Key,
-  AlertTriangle,
-  CheckCircle,
   Eye,
   EyeOff
 } from 'lucide-react';
 
-const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
+const Profile = ({ onClose, onProfileUpdate, onUpdate, darkMode = false }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,15 +25,14 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Edit states
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     username: '',
     email: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    telegramUserId: ''
   });
 
-  // Password change states
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -51,7 +45,6 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
     confirm: false
   });
 
-  // Stats
   const [stats, setStats] = useState({
     totalProducts: 0,
     accountCreated: null
@@ -74,7 +67,8 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
       setEditForm({
         username: profileData.username || '',
         email: profileData.email || '',
-        phoneNumber: profileData.phoneNumber || ''
+        phoneNumber: profileData.phoneNumber || '',
+        telegramUserId: profileData.telegramUserId || ''
       });
 
       setStats({
@@ -104,7 +98,7 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
 
   const handleEditFormChange = (e) => {
     const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev, [name]: value }));
+    setEditForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSaveProfile = async (e) => {
@@ -126,9 +120,8 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
       const updatedProfile = await updateProfile(editForm);
       setProfile(updatedProfile);
       setIsEditing(false);
-      if (onProfileUpdate) {
-        onProfileUpdate(updatedProfile);
-      }
+      if (onProfileUpdate) onProfileUpdate(updatedProfile);
+      if (onUpdate) onUpdate(updatedProfile);
       showMessage('success', 'Profile updated successfully');
     } catch (err) {
       setError(err?.response?.data?.error || 'Failed to update profile');
@@ -139,7 +132,7 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
 
   const handlePasswordFormChange = (e) => {
     const { name, value } = e.target;
-    setPasswordForm(prev => ({ ...prev, [name]: value }));
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleChangePassword = async (e) => {
@@ -186,13 +179,9 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
     const confirm1 = window.confirm(
       'Are you sure you want to delete your account? This will permanently delete all your products and cannot be undone.'
     );
-
     if (!confirm1) return;
 
-    const confirm2 = window.prompt(
-      'Type "DELETE" to confirm account deletion:'
-    );
-
+    const confirm2 = window.prompt('Type "DELETE" to confirm account deletion:');
     if (confirm2 !== 'DELETE') {
       setError('Account deletion cancelled');
       return;
@@ -211,351 +200,241 @@ const Profile = ({ onClose, onProfileUpdate, darkMode = false }) => {
   };
 
   const togglePasswordVisibility = (field) => {
-    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${darkMode ? 'border-cyan-500' : 'border-blue-500'}`}></div>
-        <span className={`ml-2 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Loading profile...</span>
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#15803D]" />
+        <span className="ml-2.5 text-xs font-medium">Loading profile...</span>
       </div>
     );
   }
 
   return (
-    <div className={`max-w-4xl mx-auto rounded-xl shadow-lg border overflow-hidden ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-500 px-6 py-4 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <User size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Account Profile</h1>
-              <p className="text-blue-100 text-sm">Manage your account settings</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-white hover:bg-white/20"
-          >
-            <X size={20} />
-          </Button>
-        </div>
-      </div>
-
-      {/* Messages */}
-      {error && (
-        <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center">
-          <AlertTriangle size={16} className="text-red-500 mr-2 flex-shrink-0" />
-          <span className="text-red-700 text-sm">{error}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="mx-6 mt-4 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center">
-          <CheckCircle size={16} className="text-emerald-500 mr-2 flex-shrink-0" />
-          <span className="text-emerald-700 text-sm">{success}</span>
-        </div>
-      )}
-
+    <div className="h-full">
       {/* Tabs */}
-      <div className={`border-b ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-        <nav className="flex flex-wrap">
+      <div className={`flex border-b ${darkMode ? 'border-[#262626]' : 'border-[#E4E4E0]'} mb-6`}>
+        {['profile', 'security', 'stats'].map((tab) => (
           <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'profile'
-                ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
-                : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 pb-3 text-xs font-semibold uppercase tracking-wider transition-all relative cursor-pointer ${
+              activeTab === tab
+                ? 'text-[#15803D] dark:text-[#4ADE80]'
+                : darkMode
+                ? 'text-[#A3A39E] hover:text-white'
+                : 'text-[#767670] hover:text-[#111111]'
             }`}
           >
-            Profile
+            {tab}
+            {activeTab === tab && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#15803D] dark:bg-[#4ADE80]" />
+            )}
           </button>
-          <button
-            onClick={() => setActiveTab('security')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'security'
-                ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
-                : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Security
-          </button>
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'stats'
-                ? darkMode ? 'border-cyan-500 text-cyan-400' : 'border-blue-500 text-blue-600'
-                : darkMode ? 'border-transparent text-slate-400 hover:text-slate-300' : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Stats
-          </button>
-        </nav>
+        ))}
       </div>
 
-      {/* Tab Content */}
-      <div className="p-6">
+      {error && <ErrorMessage message={error} type="error" className="mb-5" />}
+      {success && <ErrorMessage message={success} type="success" className="mb-5" />}
+
+      <div>
         {activeTab === 'profile' && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className={`text-lg font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Profile Information</h2>
+              <h3 className="text-sm font-bold">Store Operator Details</h3>
               {!isEditing && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className={darkMode ? '!border-slate-600 !text-slate-300 hover:!bg-slate-700' : ''}
-                >
-                  <Edit3 size={16} className="mr-2" />
-                  Edit Profile
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  Edit
                 </Button>
               )}
             </div>
 
             {isEditing ? (
               <form onSubmit={handleSaveProfile} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Username"
-                    name="username"
-                    value={editForm.username}
-                    onChange={handleEditFormChange}
-                    placeholder="Your username"
-                    darkMode={darkMode}
-                    required
-                  />
-                  <Input
-                    label="Email (optional)"
-                    type="email"
-                    name="email"
-                    value={editForm.email}
-                    onChange={handleEditFormChange}
-                    placeholder="you@example.com"
-                    darkMode={darkMode}
-                  />
-                </div>
                 <Input
-                  label="WhatsApp Phone Number"
-                  name="phoneNumber"
-                  value={editForm.phoneNumber}
+                  label="Username"
+                  name="username"
+                  value={editForm.username}
                   onChange={handleEditFormChange}
-                  placeholder="+92333xxxxxxx"
                   darkMode={darkMode}
                   required
                 />
-                <div className="flex gap-3 pt-2">
-                  <Button type="submit" isLoading={saving}>
-                    <Save size={16} className="mr-2" />
+                <Input
+                  label="Email"
+                  name="email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={handleEditFormChange}
+                  darkMode={darkMode}
+                />
+                <Input
+                  label="WhatsApp Number"
+                  name="phoneNumber"
+                  value={editForm.phoneNumber}
+                  onChange={handleEditFormChange}
+                  darkMode={darkMode}
+                  required
+                />
+                <Input
+                  label="Telegram ID"
+                  name="telegramUserId"
+                  value={editForm.telegramUserId}
+                  onChange={handleEditFormChange}
+                  darkMode={darkMode}
+                />
+
+                <div className="flex gap-2.5 pt-2">
+                  <Button type="submit" variant="accent" isLoading={saving} className="flex-1">
                     Save Changes
                   </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditForm({
-                        username: profile.username || '',
-                        email: profile.email || '',
-                        phoneNumber: profile.phoneNumber || ''
-                      });
-                    }}
-                  >
-                    <X size={16} className="mr-2" />
+                  <Button type="button" variant="outline" onClick={() => setIsEditing(false)} className="flex-1">
                     Cancel
                   </Button>
                 </div>
               </form>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-blue-100 p-2 rounded-lg">
-                    <User size={20} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Username</p>
-                    <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{profile.username}</p>
-                  </div>
-                </div>
-
-                {profile.email && (
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-emerald-100 p-2 rounded-lg">
-                      <Mail size={20} className="text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Email</p>
-                      <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{profile.email}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center space-x-3">
-                  <div className="bg-purple-100 p-2 rounded-lg">
-                    <Phone size={20} className="text-purple-600" />
-                  </div>
-                  <div>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Phone Number</p>
-                    <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{profile.phoneNumber}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <div className="bg-orange-100 p-2 rounded-lg">
-                    <Calendar size={20} className="text-orange-600" />
-                  </div>
-                  <div>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Member Since</p>
-                    <p className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                      {new Date(stats.accountCreated).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-3">
+                <InfoItem icon={User} label="Username" value={profile.username} darkMode={darkMode} />
+                <InfoItem icon={Mail} label="Email" value={profile.email || 'Not set'} darkMode={darkMode} />
+                <InfoItem icon={Phone} label="WhatsApp" value={profile.phoneNumber} darkMode={darkMode} />
+                <InfoItem icon={Shield} label="Telegram ID" value={profile.telegramUserId || 'Not linked'} darkMode={darkMode} />
               </div>
             )}
           </div>
         )}
 
         {activeTab === 'security' && (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h2 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Change Password</h2>
-              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Update your password to keep your account secure.</p>
+              <h3 className="text-sm font-bold">Change Password</h3>
+              <p className={`text-xs mt-0.5 ${darkMode ? 'text-[#A3A39E]' : 'text-[#767670]'}`}>
+                Update your workspace credentials
+              </p>
             </div>
 
-            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-              <div className="relative">
-                <Input
-                  label="Current Password"
-                  type={showPasswords.current ? "text" : "password"}
-                  name="currentPassword"
-                  value={passwordForm.currentPassword}
-                  onChange={handlePasswordFormChange}
-                  placeholder="Enter current password"
-                  darkMode={darkMode}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('current')}
-                  className={`absolute right-3 top-9 ${darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  {showPasswords.current ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-
-              <div className="relative">
-                <Input
-                  label="New Password"
-                  type={showPasswords.new ? "text" : "password"}
-                  name="newPassword"
-                  value={passwordForm.newPassword}
-                  onChange={handlePasswordFormChange}
-                  placeholder="Enter new password"
-                  darkMode={darkMode}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('new')}
-                  className={`absolute right-3 top-9 ${darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  {showPasswords.new ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-
-              <div className="relative">
-                <Input
-                  label="Confirm New Password"
-                  type={showPasswords.confirm ? "text" : "password"}
-                  name="confirmPassword"
-                  value={passwordForm.confirmPassword}
-                  onChange={handlePasswordFormChange}
-                  placeholder="Confirm new password"
-                  darkMode={darkMode}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('confirm')}
-                  className={`absolute right-3 top-9 ${darkMode ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  {showPasswords.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-
-              <Button type="submit" isLoading={changingPassword}>
-                <Key size={16} className="mr-2" />
-                Change Password
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <PasswordInput
+                label="Current Password"
+                name="currentPassword"
+                value={passwordForm.currentPassword}
+                onChange={handlePasswordFormChange}
+                isVisible={showPasswords.current}
+                onToggle={() => togglePasswordVisibility('current')}
+                darkMode={darkMode}
+              />
+              <PasswordInput
+                label="New Password"
+                name="newPassword"
+                value={passwordForm.newPassword}
+                onChange={handlePasswordFormChange}
+                isVisible={showPasswords.new}
+                onToggle={() => togglePasswordVisibility('new')}
+                darkMode={darkMode}
+              />
+              <PasswordInput
+                label="Confirm Password"
+                name="confirmPassword"
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordFormChange}
+                isVisible={showPasswords.confirm}
+                onToggle={() => togglePasswordVisibility('confirm')}
+                darkMode={darkMode}
+              />
+              <Button type="submit" variant="accent" isLoading={changingPassword} className="w-full mt-2">
+                Update Password
               </Button>
             </form>
           </div>
         )}
 
         {activeTab === 'stats' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Account Statistics</h2>
-              <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Overview of your account activity.</p>
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold mb-3">Workspace Activity</h3>
+            <div
+              className={`p-4 rounded-xl border flex items-center gap-4 ${
+                darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+              }`}
+            >
+              <div className="p-3 rounded-lg bg-[#F0FDF4] text-[#15803D] dark:bg-[#0D2116] dark:text-[#4ADE80]">
+                <Package size={20} />
+              </div>
+              <div>
+                <p className="tabular-data text-2xl font-bold">{stats.totalProducts}</p>
+                <p className="text-xs text-[#767670]">Tracked Inventory Batches</p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/30 border-blue-700' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'}`}>
-                <div className="flex items-center space-x-3 mb-3">
-                  <Package size={24} className="text-blue-600" />
-                  <h3 className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Total Products</h3>
-                </div>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>{stats.totalProducts}</p>
-                <p className={`text-sm mt-1 ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>Products in inventory</p>
+            <div
+              className={`p-4 rounded-xl border flex items-center gap-4 ${
+                darkMode ? 'bg-[#0A0A0A] border-[#262626]' : 'bg-white border-[#E4E4E0]'
+              }`}
+            >
+              <div className="p-3 rounded-lg bg-[#F3F2EE] text-[#111111] dark:bg-[#1A1A1A] dark:text-[#F5F5F3]">
+                <Calendar size={20} />
               </div>
-
-              <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gradient-to-br from-emerald-900/30 to-emerald-800/30 border-emerald-700' : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200'}`}>
-                <div className="flex items-center space-x-3 mb-3">
-                  <Calendar size={24} className="text-emerald-600" />
-                  <h3 className={`font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Account Age</h3>
-                </div>
-                <p className={`text-3xl font-bold ${darkMode ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                  {stats.accountCreated ?
-                    Math.floor((new Date() - new Date(stats.accountCreated)) / (1000 * 60 * 60 * 24)) : 0
-                  }
+              <div>
+                <p className="tabular-data text-2xl font-bold">
+                  {stats.accountCreated
+                    ? Math.floor((new Date() - new Date(stats.accountCreated)) / (1000 * 60 * 60 * 24))
+                    : 0}
                 </p>
-                <p className={`text-sm mt-1 ${darkMode ? 'text-emerald-300' : 'text-emerald-600'}`}>Days since registration</p>
+                <p className="text-xs text-[#767670]">Days Active</p>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Danger Zone */}
-      <div className={`border-t px-6 py-4 ${darkMode ? 'border-slate-700 bg-red-900/20' : 'border-slate-200 bg-red-50'}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className={`font-semibold flex items-center ${darkMode ? 'text-red-400' : 'text-red-900'}`}>
-              <Trash2 size={16} className="mr-2" />
-              Danger Zone
-            </h3>
-            <p className={`text-sm mt-1 ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
-              Permanently delete your account and all associated data. This action cannot be undone.
-            </p>
-          </div>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={handleDeleteAccount}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            <Trash2 size={16} className="mr-2" />
-            Delete Account
-          </Button>
-        </div>
+      <div className={`mt-8 pt-6 border-t ${darkMode ? 'border-[#262626]' : 'border-[#E4E4E0]'}`}>
+        <button
+          onClick={handleDeleteAccount}
+          className="flex items-center text-[#DC2626] hover:underline text-xs font-semibold cursor-pointer"
+        >
+          <Trash2 size={14} className="mr-1.5" />
+          Permanently Delete Account
+        </button>
       </div>
     </div>
   );
 };
+
+const InfoItem = ({ icon: Icon, label, value, darkMode }) => (
+  <div
+    className={`flex items-center p-3.5 rounded-lg border ${
+      darkMode ? 'border-[#262626] bg-[#0A0A0A]' : 'border-[#E4E4E0] bg-white'
+    }`}
+  >
+    <div className="mr-3 text-[#767670]">
+      <Icon size={16} />
+    </div>
+    <div>
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[#767670]">{label}</p>
+      <p className="text-xs sm:text-sm font-semibold mt-0.5">{value}</p>
+    </div>
+  </div>
+);
+
+const PasswordInput = ({ label, name, value, onChange, isVisible, onToggle, darkMode }) => (
+  <div className="relative">
+    <Input
+      label={label}
+      type={isVisible ? 'text' : 'password'}
+      name={name}
+      value={value}
+      onChange={onChange}
+      darkMode={darkMode}
+      required
+    />
+    <button
+      type="button"
+      onClick={onToggle}
+      className="absolute right-3 top-8 text-[#767670] hover:text-current cursor-pointer"
+    >
+      {isVisible ? <EyeOff size={15} /> : <Eye size={15} />}
+    </button>
+  </div>
+);
 
 export default Profile;

@@ -1,162 +1,342 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Button from './ui/Button';
-import { Package, Hash, Layers, AlertTriangle, CheckCircle, XCircle, Trash2, Edit, MessageCircle } from 'lucide-react';
-import { sendExpiryAlert } from '../services/productService';
+import Badge from './ui/Badge';
+import {
+  AlertTriangle,
+  CheckCircle,
+  Edit,
+  Info,
+  Layers,
+  MessageCircle,
+  ShieldCheck,
+  Tag,
+  Trash2,
+  XCircle
+} from 'lucide-react';
+import { sendExpiryAlert, sendTelegramAlert } from '../services/productService';
 
-const ProductDetails = ({ product, onEdit, onDelete, onAlertSent, darkMode = false }) => {
-  const [alertLoading, setAlertLoading] = useState(false);
-  const [alertSent, setAlertSent] = useState(false);
-  
-  const handleSendAlert = async () => {
-    setAlertLoading(true);
+const ALERT_RESET_DELAY = 3000;
+
+const ProductDetails = ({
+  product,
+  onEdit,
+  onDelete,
+  onAlertSent,
+  darkMode = false
+}) => {
+  const [whatsappLoading, setWhatsappLoading] = useState(false);
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const [whatsappSent, setWhatsappSent] = useState(false);
+  const [telegramSent, setTelegramSent] = useState(false);
+  const [whatsappError, setWhatsappError] = useState(false);
+  const [telegramError, setTelegramError] = useState(false);
+
+  const resetAlertState = useCallback((type) => {
+    setTimeout(() => {
+      if (type === 'whatsapp') {
+        setWhatsappSent(false);
+        setWhatsappError(false);
+      } else {
+        setTelegramSent(false);
+        setTelegramError(false);
+      }
+    }, ALERT_RESET_DELAY);
+  }, []);
+
+  const handleSendWhatsAppAlert = useCallback(async () => {
+    setWhatsappLoading(true);
+    setWhatsappError(false);
     try {
-      const response = await sendExpiryAlert(product.id);
-      setAlertSent(true);
-      if (onAlertSent) {
-        onAlertSent(`✓ Alert sent successfully to WhatsApp!\n${product.name} - ${response.status || 'Expiry alert sent'}`, 'success');
-      }
-      // Reset success state after 3 seconds
-      setTimeout(() => setAlertSent(false), 3000);
+      await sendExpiryAlert(product.id);
+      setWhatsappSent(true);
+      onAlertSent?.('success', `WhatsApp alert sent for ${product.name}`);
+      resetAlertState('whatsapp');
     } catch (error) {
-      if (onAlertSent) {
-        onAlertSent(`✗ Failed to send alert: ${error.message}`, 'error');
-      }
+      setWhatsappError(true);
+      onAlertSent?.('error', `Failed to send WhatsApp alert: ${error.message || 'Unknown error'}`);
+      resetAlertState('whatsapp');
     } finally {
-      setAlertLoading(false);
+      setWhatsappLoading(false);
     }
-  };
+  }, [product.id, product.name, onAlertSent, resetAlertState]);
 
-  const getStatusDetails = (dateString) => {
+  const handleSendTelegramAlert = useCallback(async () => {
+    setTelegramLoading(true);
+    setTelegramError(false);
+    try {
+      await sendTelegramAlert(product.id);
+      setTelegramSent(true);
+      onAlertSent?.('success', `Telegram alert sent for ${product.name}`);
+      resetAlertState('telegram');
+    } catch (error) {
+      setTelegramError(true);
+      onAlertSent?.('error', `Failed to send Telegram alert: ${error.message || 'Unknown error'}`);
+      resetAlertState('telegram');
+    } finally {
+      setTelegramLoading(false);
+    }
+  }, [product.id, product.name, onAlertSent, resetAlertState]);
+
+  const getStatusDetails = useCallback((dateString) => {
     const today = new Date();
     const expiry = new Date(dateString);
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return { 
-      label: 'Expired', 
-      color: darkMode ? 'text-red-400 bg-red-900/30 border-red-700' : 'text-red-700 bg-red-50 border-red-200', 
-      icon: <XCircle className={`w-5 h-5 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />,
-      msg: `Expired ${Math.abs(diffDays)} days ago`
+    if (diffDays < 0) {
+      return {
+        label: 'Expired',
+        variant: 'destructive',
+        icon: <XCircle className="h-4 w-4" />,
+        msg: `Expired ${Math.abs(diffDays)} days ago`,
+        urgency: 'critical'
+      };
+    }
+    if (diffDays <= 30) {
+      return {
+        label: 'Expiring Soon',
+        variant: 'warning',
+        icon: <AlertTriangle className="h-4 w-4" />,
+        msg: `Expires in ${diffDays} days`,
+        urgency: 'warning'
+      };
+    }
+    return {
+      label: 'Healthy Stock',
+      variant: 'success',
+      icon: <CheckCircle className="h-4 w-4" />,
+      msg: `Valid for ${diffDays} more days`,
+      urgency: 'good'
     };
-    if (diffDays <= 30) return { 
-      label: 'Expiring Soon', 
-      color: darkMode ? 'text-amber-400 bg-amber-900/30 border-amber-700' : 'text-amber-700 bg-amber-50 border-amber-200', 
-      icon: <AlertTriangle className={`w-5 h-5 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`} />,
-      msg: `Expires in ${diffDays} days`
-    };
-    return { 
-      label: 'Valid', 
-      color: darkMode ? 'text-emerald-400 bg-emerald-900/30 border-emerald-700' : 'text-emerald-700 bg-emerald-50 border-emerald-200', 
-      icon: <CheckCircle className={`w-5 h-5 ${darkMode ? 'text-emerald-400' : 'text-emerald-600'}`} />,
-      msg: `Valid for ${diffDays} days`
-    };
-  };
+  }, []);
+
+  const getStatusMessage = useCallback((urgency) => {
+    switch (urgency) {
+      case 'critical':
+        return 'This batch has passed its expiration date and should be removed from active shelves immediately.';
+      case 'warning':
+        return 'This batch is within its 30-day window. Pull to the front row (FEFO), apply a clearance discount, or initiate a distributor return.';
+      default:
+        return 'This batch has healthy remaining shelf life and can remain in standard rotation.';
+    }
+  }, []);
 
   const status = getStatusDetails(product.expiryDate);
+  const imageSrc = product.imageUrl || product.image || '/api/placeholder/400/400';
 
   return (
-    <div className="flex flex-col h-full">
-      <div className={`flex-1 overflow-y-auto ${darkMode ? 'scrollbar-dark' : 'scrollbar-light'}`}>
-        {product.imageUrl && (
-          <div className={`mb-6 rounded-lg overflow-hidden border shadow-sm ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-            <img src={product.imageUrl} alt={product.name} className="w-full h-auto object-cover max-h-64" />
-          </div>
-        )}
-
-        {product.image && (
-          <div className={`mb-6 rounded-lg overflow-hidden border shadow-sm ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-            <img src={product.image} alt={product.name} className="w-full h-auto object-cover max-h-64" />
-          </div>
-        )}
-
-        <div className="space-y-6">
-          {/* Status Banner */}
-          <div className={`p-4 rounded-lg border flex items-start space-x-3 ${status.color}`}>
-            <div className="mt-0.5">{status.icon}</div>
-            <div>
-              <h4 className={`font-semibold text-sm uppercase tracking-wide opacity-90 ${darkMode ? 'text-current' : ''}`}>{status.label}</h4>
-              <p className={`text-sm mt-1 opacity-90 ${darkMode ? 'text-current' : ''}`}>{status.msg} ({new Date(product.expiryDate).toLocaleDateString()})</p>
+    <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-6">
+      {/* Header Summary Card */}
+      <div
+        className={`rounded-xl border p-5 sm:p-6 ${
+          darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+        }`}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" darkMode={darkMode}>
+                <Layers size={11} />
+                <span>{product.category || 'Uncategorized'}</span>
+              </Badge>
+              {product.brand && (
+                <Badge variant="outline" darkMode={darkMode}>
+                  <Tag size={11} />
+                  <span>{product.brand}</span>
+                </Badge>
+              )}
+              <Badge variant={status.variant} darkMode={darkMode}>
+                {status.icon}
+                <span>{status.label}</span>
+              </Badge>
             </div>
+
+            <h2 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight">
+              {product.name}
+            </h2>
+            <p className={`mt-2 text-sm leading-relaxed ${darkMode ? 'text-[#A3A39E]' : 'text-[#4A4A46]'}`}>
+              {product.description || 'No additional notes recorded for this batch. Active FEFO monitoring is enabled.'}
+            </p>
           </div>
 
-          {/* Basic Info */}
-          <div>
-            <h3 className={`text-sm font-medium uppercase tracking-wider mb-3 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Product Information</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                 <div className={`p-3 rounded-md border ${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-100'}`}>
-                    <span className={`text-xs block mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Product Name</span>
-                    <span className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{product.name}</span>
-                 </div>
-                 
-                 <div className="grid grid-cols-2 gap-4">
-                   <div className={`p-3 rounded-md border ${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-100'}`}>
-                      <span className={`text-xs block mb-1 flex items-center gap-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}><Layers size={12}/> Category</span>
-                      <span className={`font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{product.category}</span>
-                   </div>
-                   <div className={`p-3 rounded-md border ${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-100'}`}>
-                      <span className={`text-xs block mb-1 flex items-center gap-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}><Hash size={12}/> Batch No.</span>
-                      <span className={`font-mono text-sm font-medium ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{product.batchNumber}</span>
-                   </div>
-                 </div>
-
-                 <div className={`p-3 rounded-md border ${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-100'}`}>
-                    <span className={`text-xs block mb-1 flex items-center gap-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}><Package size={12}/> Stock Level</span>
-                    <div className="flex items-baseline">
-                      <span className="text-2xl font-bold text-blue-600 mr-2">{product.quantity}</span>
-                      <span className={darkMode ? 'text-slate-300' : 'text-slate-600'}>{product.unit}</span>
-                    </div>
-                 </div>
-
-                 <div className={`p-3 rounded-md border ${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-100'}`}>
-                    <span className={`text-xs block mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Description</span>
-                    <p className={`text-sm leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{product.description}</p>
-                 </div>
-              </div>
+          <div
+            className={`rounded-lg border p-4 lg:min-w-[260px] ${
+              darkMode ? 'border-[#262626] bg-[#0A0A0A]' : 'border-[#E4E4E0] bg-[#FAF9F6]'
+            }`}
+          >
+            <div className="text-[11px] font-mono uppercase tracking-wider text-[#767670]">
+              Countdown Status
+            </div>
+            <div className="mt-1 tabular-data text-xl font-bold">
+              {status.msg}
+            </div>
+            <div className={`mt-1.5 text-xs leading-relaxed ${darkMode ? 'text-[#A3A39E]' : 'text-[#4A4A46]'}`}>
+              {getStatusMessage(status.urgency)}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Actions Footer */}
-      <div className={`pt-4 sm:pt-6 border-t mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 ${darkMode ? 'border-slate-700 bg-slate-800' : 'border-slate-100 bg-white'}`}>
-        <Button 
-          variant="outline" 
-          onClick={handleSendAlert}
-          isLoading={alertLoading}
-          disabled={alertSent}
-          className={`w-full flex items-center justify-center gap-2 ${
-            alertSent 
-              ? '!border-emerald-300 !bg-emerald-50 !text-emerald-600' 
-              : darkMode 
-                ? '!border-green-600 hover:!bg-green-900/20 !text-green-400'
-                : '!border-green-300 hover:!bg-green-50 hover:!border-green-400 !text-green-600'
-          }`}
-        >
-          {alertSent ? (
-            <>
-              <CheckCircle size={16} /> <span className="sm:hidden">Sent</span><span className="hidden sm:inline">Sent</span>
-            </>
-          ) : (
-            <>
-              <MessageCircle size={16} /> <span className="sm:hidden">Alert</span><span className="hidden sm:inline">Send Alert</span>
-            </>
-          )}
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={() => onEdit(product)}
-          className={`w-full flex items-center justify-center gap-2 ${darkMode ? '!border-slate-600 !text-slate-300 hover:!bg-slate-700' : ''}`}
-        >
-          <Edit size={16} /> <span className="sm:hidden">Edit</span><span className="hidden sm:inline">Edit</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          onClick={() => onDelete(product)}
-          className={`w-full flex items-center justify-center gap-2 ${darkMode ? '!text-red-400 !border-red-700 hover:!bg-red-900/20' : '!text-red-600 !border-red-300 hover:!bg-red-50 hover:!border-red-400'}`}
-        >
-          <Trash2 size={16} /> <span className="sm:hidden">Delete</span><span className="hidden sm:inline">Delete</span>
-        </Button>
+      {/* Main Details Split */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Left: Product Image & Codes (6 Cols) */}
+        <div className="lg:col-span-6 space-y-4">
+          <div
+            className={`overflow-hidden rounded-xl border p-4 ${
+              darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+            }`}
+          >
+            <div
+              className={`aspect-[4/3] rounded-lg border flex items-center justify-center p-4 ${
+                darkMode ? 'border-[#262626] bg-[#0A0A0A]' : 'border-[#E4E4E0] bg-[#FAF9F6]'
+              }`}
+            >
+              <img
+                src={imageSrc}
+                alt={product.name}
+                className="h-full w-full object-contain"
+                loading="lazy"
+                onError={(e) => {
+                  e.target.src = '/api/placeholder/400/400';
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div
+              className={`rounded-lg border p-3.5 ${
+                darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+              }`}
+            >
+              <div className="text-[10px] font-mono uppercase text-[#767670]">
+                Batch Number
+              </div>
+              <div className="mt-1 font-mono text-xs sm:text-sm font-semibold truncate">
+                {product.batchNumber || 'NOT SET'}
+              </div>
+            </div>
+            <div
+              className={`rounded-lg border p-3.5 ${
+                darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+              }`}
+            >
+              <div className="text-[10px] font-mono uppercase text-[#767670]">
+                Barcode
+              </div>
+              <div className="mt-1 font-mono text-xs sm:text-sm font-semibold truncate">
+                {product.barcode || 'NONE'}
+              </div>
+            </div>
+            <div
+              className={`rounded-lg border p-3.5 ${
+                darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+              }`}
+            >
+              <div className="text-[10px] font-mono uppercase text-[#767670]">
+                Quantity
+              </div>
+              <div className="mt-1 tabular-data text-xs sm:text-sm font-semibold">
+                {product.quantity || 0} {product.unit || 'units'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Specifications & Dispatch Actions (6 Cols) */}
+        <div className="lg:col-span-6 space-y-4">
+          <div
+            className={`rounded-xl border p-5 ${
+              darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+            }`}
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#767670]">
+              <Info size={15} className="text-[#15803D] dark:text-[#4ADE80]" />
+              <span>Ledger Specifications</span>
+            </div>
+
+            <div className="mt-4 divide-y divide-[#E4E4E0] dark:divide-[#262626]">
+              {[
+                ['Stock Level', `${product.quantity || 0} ${product.unit || 'units'}`],
+                [
+                  'Expiration Date',
+                  product.expiryDate
+                    ? new Date(product.expiryDate).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
+                    : 'Not set'
+                ],
+                ['Batch / Lot Code', product.batchNumber || 'Not set'],
+                ['Storage Location', product.storageLocation || 'Main Shelf'],
+                [
+                  'Manufacturing Date',
+                  product.manufacturingDate
+                    ? new Date(product.manufacturingDate).toLocaleDateString()
+                    : 'Not recorded'
+                ]
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between py-3 text-xs sm:text-sm">
+                  <span className={darkMode ? 'text-[#A3A39E]' : 'text-[#767670]'}>{label}</span>
+                  <span className="font-mono font-semibold">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`rounded-xl border p-5 ${
+              darkMode ? 'border-[#262626] bg-[#141414]' : 'border-[#E4E4E0] bg-white'
+            }`}
+          >
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#767670]">
+              <ShieldCheck size={15} className="text-[#15803D] dark:text-[#4ADE80]" />
+              <span>Manual Alert Dispatch &amp; Record Actions</span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Button
+                variant="accent"
+                onClick={handleSendWhatsAppAlert}
+                isLoading={whatsappLoading}
+                disabled={whatsappSent || whatsappLoading}
+                className="h-11 text-xs font-semibold gap-1.5"
+              >
+                <MessageCircle size={15} />
+                <span>{whatsappSent ? 'Sent to WhatsApp' : 'Send WhatsApp Alert'}</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleSendTelegramAlert}
+                isLoading={telegramLoading}
+                disabled={telegramSent || telegramLoading}
+                className="h-11 text-xs font-semibold"
+              >
+                <span>{telegramSent ? 'Sent to Telegram' : 'Send Telegram Alert'}</span>
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={() => onEdit?.(product)}
+                className="h-11 text-xs font-semibold gap-1.5"
+              >
+                <Edit size={15} />
+                <span>Edit Record</span>
+              </Button>
+
+              <Button
+                variant="danger"
+                onClick={() => onDelete?.(product)}
+                className="h-11 text-xs font-semibold gap-1.5"
+              >
+                <Trash2 size={15} />
+                <span>Delete Record</span>
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
